@@ -110,7 +110,7 @@
     document.getElementById('page-title').textContent = PAGE_TITLES[name];
     document.getElementById('views').scrollTop = 0;
     if (name === 'home') renderHome();
-    if (name === 'log') renderLog();
+    if (name === 'log') { renderCalendar(); renderLog(); }
     if (name === 'todo') renderTodo();
     if (name === 'money') renderMoney();
     if (name === 'shopping') renderShopping();
@@ -210,6 +210,68 @@
   const logDateInput = document.getElementById('log-date');
   const logTextInput = document.getElementById('log-text');
 
+  const calendarMonth = new Date();
+  calendarMonth.setDate(1);
+  let selectedLogDate = null;
+
+  function renderCalendar() {
+    const year = calendarMonth.getFullYear();
+    const month = calendarMonth.getMonth();
+    document.getElementById('cal-month-label').textContent = `${year}年${month + 1}月`;
+
+    const recordDates = new Set(state.records.map((r) => r.date));
+    const today = todayStr();
+    const firstWeekday = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+    const grid = document.getElementById('calendar-grid');
+    grid.innerHTML = '';
+    ['日', '月', '火', '水', '木', '金', '土'].forEach((wd) => {
+      const cell = document.createElement('div');
+      cell.className = 'cal-weekday';
+      cell.textContent = wd;
+      grid.appendChild(cell);
+    });
+    for (let i = 0; i < firstWeekday; i++) {
+      const empty = document.createElement('div');
+      empty.className = 'cal-day empty';
+      grid.appendChild(empty);
+    }
+    for (let d = 1; d <= daysInMonth; d++) {
+      const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      const cell = document.createElement('button');
+      cell.type = 'button';
+      cell.className = 'cal-day';
+      if (dateStr === today) cell.classList.add('is-today');
+      if (dateStr === selectedLogDate) cell.classList.add('is-selected');
+      if (recordDates.has(dateStr)) cell.classList.add('has-record');
+      cell.textContent = String(d);
+      cell.dataset.date = dateStr;
+      grid.appendChild(cell);
+    }
+  }
+
+  document.getElementById('cal-prev').addEventListener('click', () => {
+    calendarMonth.setMonth(calendarMonth.getMonth() - 1);
+    renderCalendar();
+  });
+  document.getElementById('cal-next').addEventListener('click', () => {
+    calendarMonth.setMonth(calendarMonth.getMonth() + 1);
+    renderCalendar();
+  });
+  document.getElementById('calendar-grid').addEventListener('click', (e) => {
+    const cell = e.target.closest('.cal-day:not(.empty)');
+    if (!cell) return;
+    selectedLogDate = selectedLogDate === cell.dataset.date ? null : cell.dataset.date;
+    renderCalendar();
+    renderLog();
+  });
+  document.getElementById('log-clear-filter-btn').addEventListener('click', () => {
+    selectedLogDate = null;
+    renderCalendar();
+    renderLog();
+  });
+
   logForm.addEventListener('submit', (e) => {
     e.preventDefault();
     const text = logTextInput.value.trim();
@@ -228,13 +290,27 @@
 
   function renderLog() {
     logDateInput.value = logDateInput.value || todayStr();
+
+    const titleEl = document.getElementById('log-list-title');
+    const clearFilterBtn = document.getElementById('log-clear-filter-btn');
+    if (selectedLogDate) {
+      titleEl.textContent = `${formatDateLabel(selectedLogDate)}の記録`;
+      clearFilterBtn.style.display = '';
+    } else {
+      titleEl.textContent = '記録一覧';
+      clearFilterBtn.style.display = 'none';
+    }
+
     const listEl = document.getElementById('log-list');
     listEl.innerHTML = '';
-    if (state.records.length === 0) {
-      listEl.innerHTML = '<p class="empty-hint">まだ記録がありません。今日できたことを書いてみましょう。</p>';
+    const records = selectedLogDate ? state.records.filter((r) => r.date === selectedLogDate) : state.records;
+    if (records.length === 0) {
+      listEl.innerHTML = selectedLogDate
+        ? '<p class="empty-hint">この日の記録はありません。</p>'
+        : '<p class="empty-hint">まだ記録がありません。今日できたことを書いてみましょう。</p>';
       return;
     }
-    const sorted = [...state.records].sort((a, b) => (b.date + b.time).localeCompare(a.date + a.time));
+    const sorted = [...records].sort((a, b) => (b.date + b.time).localeCompare(a.date + a.time));
     const groups = new Map();
     sorted.forEach((r) => {
       if (!groups.has(r.date)) groups.set(r.date, []);
@@ -315,8 +391,19 @@
   });
 
   document.getElementById('clear-done-todo-btn').addEventListener('click', () => {
-    const hasChecked = state.todos.some((t) => t.checked);
-    if (!hasChecked) return;
+    const doneTodos = state.todos.filter((t) => t.checked);
+    if (doneTodos.length === 0) return;
+    const today = todayStr();
+    const time = nowTimeStr();
+    doneTodos.forEach((t) => {
+      state.records.push({
+        id: uid(),
+        date: today,
+        time,
+        text: `✅ ${t.text}`,
+        createdAt: Date.now(),
+      });
+    });
     state.todos = state.todos.filter((t) => !t.checked);
     save();
     renderTodo();
@@ -521,8 +608,15 @@
   });
 
   document.getElementById('clear-checked-btn').addEventListener('click', () => {
-    const hasChecked = state.shopping.some((i) => i.checked);
-    if (!hasChecked) return;
+    const doneItems = state.shopping.filter((i) => i.checked);
+    if (doneItems.length === 0) return;
+    state.records.push({
+      id: uid(),
+      date: todayStr(),
+      time: nowTimeStr(),
+      text: `🛒 買い物: ${doneItems.map((i) => i.name).join('、')}`,
+      createdAt: Date.now(),
+    });
     state.shopping = state.shopping.filter((i) => !i.checked);
     save();
     renderShopping();
@@ -646,6 +740,7 @@
     moneyDateInput.value = todayStr();
     populateCategorySelect('expense');
     renderHome();
+    renderCalendar();
     renderLog();
     renderTodo();
     renderMoney();

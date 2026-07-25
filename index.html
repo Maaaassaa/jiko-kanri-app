@@ -107,7 +107,17 @@
 
       <div class="card">
         <div class="card-header">
-          <h2>記録一覧</h2>
+          <button type="button" class="icon-btn cal-nav-btn" id="cal-prev">‹</button>
+          <h2 class="cal-nav-title" id="cal-month-label"></h2>
+          <button type="button" class="icon-btn cal-nav-btn" id="cal-next">›</button>
+        </div>
+        <div class="calendar-grid" id="calendar-grid"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h2 id="log-list-title">記録一覧</h2>
+          <button class="link-btn" id="log-clear-filter-btn" style="display:none;">すべて表示</button>
         </div>
         <div id="log-list"></div>
       </div>
