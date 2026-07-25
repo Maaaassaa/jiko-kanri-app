@@ -87,7 +87,7 @@
 
     <!-- 記録 -->
     <section id="view-log" class="view">
-      <form class="card form-card" id="log-form">
+      <form class="form-card sticky-note compose-note note-yellow" id="log-form">
         <label class="field-label" for="log-date">日付</label>
         <input type="date" id="log-date" required />
         <label class="field-label" for="log-text">今日の成果・できたこと</label>
@@ -105,7 +105,7 @@
 
     <!-- やることリスト -->
     <section id="view-todo" class="view">
-      <form class="card form-card" id="todo-form">
+      <form class="form-card sticky-note compose-note note-yellow" id="todo-form">
         <label class="field-label" for="todo-text">やることを追加</label>
         <input type="text" id="todo-text" placeholder="例）レポートを提出する" autocomplete="off" required />
         <label class="field-label" for="todo-due">期限（任意）</label>
@@ -166,7 +166,7 @@
 
     <!-- 買い物 -->
     <section id="view-shopping" class="view">
-      <form class="card form-card" id="shopping-form">
+      <form class="form-card sticky-note compose-note note-yellow" id="shopping-form">
         <label class="field-label" for="shopping-item">買うものを追加</label>
         <div class="inline-add">
           <input type="text" id="shopping-item" placeholder="例）牛乳" autocomplete="off" />
@@ -184,7 +184,7 @@
           <h2>リスト</h2>
           <button class="link-btn" id="clear-checked-btn">購入済みを削除</button>
         </div>
-        <ul class="check-list" id="shopping-list">
+        <ul class="check-list grid-notes" id="shopping-list">
           <li class="empty-hint">リストは空です</li>
         </ul>
       </div>

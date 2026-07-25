@@ -81,6 +81,17 @@
     return s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   }
 
+  const NOTE_COLORS = ['note-yellow', 'note-pink', 'note-blue', 'note-green', 'note-orange', 'note-purple'];
+  const NOTE_ROTATIONS = [-3, -2, -1.5, 1.5, 2, 3];
+  function noteStyle(id) {
+    let hash = 0;
+    for (let i = 0; i < id.length; i++) hash = (hash * 31 + id.charCodeAt(i)) >>> 0;
+    return {
+      colorClass: NOTE_COLORS[hash % NOTE_COLORS.length],
+      rot: NOTE_ROTATIONS[Math.floor(hash / NOTE_COLORS.length) % NOTE_ROTATIONS.length],
+    };
+  }
+
   // ---------- View switching ----------
   const VIEWS = ['home', 'log', 'todo', 'money', 'shopping'];
   const PAGE_TITLES = { home: 'ホーム', log: '記録', todo: 'やることリスト', money: 'お金', shopping: '買い物リスト' };
@@ -233,12 +244,14 @@
       heading.textContent = formatDateLabel(date);
       group.appendChild(heading);
       items.forEach((r) => {
+        const { colorClass, rot } = noteStyle(r.id);
         const entry = document.createElement('div');
-        entry.className = 'log-entry';
+        entry.className = `sticky-note log-note ${colorClass}`;
+        entry.style.setProperty('--rot', `${rot}deg`);
         entry.innerHTML = `
-          <span class="log-time">${r.time}</span>
-          <span class="log-text">${escapeHtml(r.text)}</span>
-          <button class="icon-btn" data-del-record="${r.id}">✕</button>
+          <button class="note-del" data-del-record="${r.id}">✕</button>
+          <p class="note-text">${escapeHtml(r.text)}</p>
+          <span class="note-time">${r.time}</span>
         `;
         group.appendChild(entry);
       });
@@ -280,18 +293,18 @@
   });
 
   document.getElementById('todo-list').addEventListener('click', (e) => {
-    const checkBtn = e.target.closest('[data-toggle-todo]');
-    if (checkBtn) {
-      const item = state.todos.find((t) => t.id === checkBtn.dataset.toggleTodo);
-      if (item) item.checked = !item.checked;
-      save();
-      renderTodo();
-      return;
-    }
     const delBtn = e.target.closest('[data-del-todo]');
     if (delBtn) {
       const idx = state.todos.findIndex((t) => t.id === delBtn.dataset.delTodo);
       if (idx !== -1) state.todos.splice(idx, 1);
+      save();
+      renderTodo();
+      return;
+    }
+    const checkBtn = e.target.closest('[data-toggle-todo]');
+    if (checkBtn) {
+      const item = state.todos.find((t) => t.id === checkBtn.dataset.toggleTodo);
+      if (item) item.checked = !item.checked;
       save();
       renderTodo();
     }
@@ -320,8 +333,11 @@
       return b.createdAt - a.createdAt;
     });
     sorted.forEach((t) => {
+      const { colorClass, rot } = noteStyle(t.id);
       const li = document.createElement('li');
-      li.className = 'check-item' + (t.checked ? ' checked' : '');
+      li.className = `sticky-note todo-note ${colorClass}` + (t.checked ? ' checked' : '');
+      li.style.setProperty('--rot', `${rot}deg`);
+      li.dataset.toggleTodo = t.id;
       let dueHtml = '';
       if (t.dueDate) {
         let dueClass = 'todo-due';
@@ -332,10 +348,9 @@
         dueHtml = `<span class="${dueClass}">${formatDateLabel(t.dueDate)}</span>`;
       }
       li.innerHTML = `
-        <div class="check-box" data-toggle-todo="${t.id}">${t.checked ? '✓' : ''}</div>
-        <div class="check-name">${escapeHtml(t.text)}</div>
+        <button class="note-del" data-del-todo="${t.id}">✕</button>
+        <p class="note-text">${escapeHtml(t.text)}</p>
         ${dueHtml}
-        <button class="icon-btn" data-del-todo="${t.id}">✕</button>
       `;
       listEl.appendChild(li);
     });
@@ -484,18 +499,18 @@
   }
 
   document.getElementById('shopping-list').addEventListener('click', (e) => {
-    const checkBtn = e.target.closest('[data-toggle-item]');
-    if (checkBtn) {
-      const item = state.shopping.find((i) => i.id === checkBtn.dataset.toggleItem);
-      if (item) item.checked = !item.checked;
-      save();
-      renderShopping();
-      return;
-    }
     const delBtn = e.target.closest('[data-del-item]');
     if (delBtn) {
       const idx = state.shopping.findIndex((i) => i.id === delBtn.dataset.delItem);
       if (idx !== -1) state.shopping.splice(idx, 1);
+      save();
+      renderShopping();
+      return;
+    }
+    const checkBtn = e.target.closest('[data-toggle-item]');
+    if (checkBtn) {
+      const item = state.shopping.find((i) => i.id === checkBtn.dataset.toggleItem);
+      if (item) item.checked = !item.checked;
       save();
       renderShopping();
     }
@@ -549,12 +564,14 @@
       return b.createdAt - a.createdAt;
     });
     sorted.forEach((item) => {
+      const { colorClass, rot } = noteStyle(item.id);
       const li = document.createElement('li');
-      li.className = 'check-item' + (item.checked ? ' checked' : '');
+      li.className = `sticky-note shopping-note ${colorClass}` + (item.checked ? ' checked' : '');
+      li.style.setProperty('--rot', `${rot}deg`);
+      li.dataset.toggleItem = item.id;
       li.innerHTML = `
-        <div class="check-box" data-toggle-item="${item.id}">${item.checked ? '✓' : ''}</div>
-        <div class="check-name">${escapeHtml(item.name)}</div>
-        <button class="icon-btn" data-del-item="${item.id}">✕</button>
+        <button class="note-del" data-del-item="${item.id}">✕</button>
+        <p class="note-text">${escapeHtml(item.name)}</p>
       `;
       listEl.appendChild(li);
     });
