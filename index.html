@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+<title>自己管理</title>
+<meta name="description" content="今日の成果・お金・買い物リストをまとめて管理する自己管理アプリ" />
+<meta name="theme-color" content="#4f46e5" media="(prefers-color-scheme: light)" />
+<meta name="theme-color" content="#0f172a" media="(prefers-color-scheme: dark)" />
+<link rel="manifest" href="manifest.json" />
+<link rel="icon" href="icons/icon-192.png" />
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="自己管理" />
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+<div id="app">
+
+  <header class="topbar">
+    <h1 id="page-title">ホーム</h1>
+    <div class="date-badge" id="today-badge"></div>
+  </header>
+
+  <main id="views">
+
+    <!-- ホーム -->
+    <section id="view-home" class="view active">
+      <div class="greeting-card">
+        <p id="greeting-text"></p>
+      </div>
+
+      <div class="stat-grid">
+        <div class="stat-card">
+          <span class="stat-label">今日の記録</span>
+          <span class="stat-value" id="stat-records">0<small>件</small></span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">今日の支出</span>
+          <span class="stat-value" id="stat-expense-today">¥0</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">今月の収支</span>
+          <span class="stat-value" id="stat-balance-month">¥0</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">買い物残り</span>
+          <span class="stat-value" id="stat-shopping-left">0<small>個</small></span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h2>最近の記録</h2>
+          <button class="link-btn" data-goto="log">すべて見る</button>
+        </div>
+        <ul class="mini-list" id="home-recent-records">
+          <li class="empty-hint">まだ記録がありません</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h2>買い物リスト</h2>
+          <button class="link-btn" data-goto="shopping">すべて見る</button>
+        </div>
+        <ul class="mini-list" id="home-recent-shopping">
+          <li class="empty-hint">リストは空です</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- 記録 -->
+    <section id="view-log" class="view">
+      <form class="card form-card" id="log-form">
+        <label class="field-label" for="log-date">日付</label>
+        <input type="date" id="log-date" required />
+        <label class="field-label" for="log-text">今日の成果・できたこと</label>
+        <textarea id="log-text" rows="3" placeholder="例）朝ランニング30分できた／資格の勉強を1時間やった" required></textarea>
+        <button type="submit" class="primary-btn">記録を追加</button>
+      </form>
+
+      <div class="card">
+        <div class="card-header">
+          <h2>記録一覧</h2>
+        </div>
+        <div id="log-list"></div>
+      </div>
+    </section>
+
+    <!-- お金 -->
+    <section id="view-money" class="view">
+      <form class="card form-card" id="money-form">
+        <div class="segmented" id="money-type-toggle">
+          <button type="button" class="seg-btn active" data-type="expense">支出</button>
+          <button type="button" class="seg-btn" data-type="income">収入</button>
+        </div>
+        <input type="hidden" id="money-type" value="expense" />
+
+        <label class="field-label" for="money-amount">金額</label>
+        <input type="number" id="money-amount" inputmode="numeric" min="0" placeholder="0" required />
+
+        <label class="field-label" for="money-category">カテゴリ</label>
+        <select id="money-category"></select>
+
+        <label class="field-label" for="money-date">日付</label>
+        <input type="date" id="money-date" required />
+
+        <label class="field-label" for="money-note">メモ（任意）</label>
+        <input type="text" id="money-note" placeholder="例）コンビニで昼食" />
+
+        <button type="submit" class="primary-btn">追加する</button>
+      </form>
+
+      <div class="card">
+        <div class="card-header"><h2>今月のサマリー</h2></div>
+        <div class="summary-row">
+          <div class="summary-item income"><span>収入</span><strong id="summary-income">¥0</strong></div>
+          <div class="summary-item expense"><span>支出</span><strong id="summary-expense">¥0</strong></div>
+          <div class="summary-item balance"><span>収支</span><strong id="summary-balance">¥0</strong></div>
+        </div>
+        <ul class="mini-list" id="category-breakdown"></ul>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><h2>履歴</h2></div>
+        <div id="money-list"></div>
+      </div>
+    </section>
+
+    <!-- 買い物 -->
+    <section id="view-shopping" class="view">
+      <form class="card form-card" id="shopping-form">
+        <label class="field-label" for="shopping-item">買うものを追加</label>
+        <div class="inline-add">
+          <input type="text" id="shopping-item" placeholder="例）牛乳" autocomplete="off" />
+          <button type="submit" class="primary-btn small">追加</button>
+        </div>
+      </form>
+
+      <div class="card" id="quick-add-card" style="display:none;">
+        <div class="card-header"><h2>よく買うもの</h2></div>
+        <div class="chip-row" id="quick-add-chips"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h2>リスト</h2>
+          <button class="link-btn" id="clear-checked-btn">購入済みを削除</button>
+        </div>
+        <ul class="check-list" id="shopping-list">
+          <li class="empty-hint">リストは空です</li>
+        </ul>
+      </div>
+    </section>
+
+  </main>
+
+  <nav class="tabbar">
+    <button class="tab active" data-view="home"><span class="icon">🏠</span><span>ホーム</span></button>
+    <button class="tab" data-view="log"><span class="icon">📝</span><span>記録</span></button>
+    <button class="tab" data-view="money"><span class="icon">💰</span><span>お金</span></button>
+    <button class="tab" data-view="shopping"><span class="icon">🛒</span><span>買い物</span></button>
+  </nav>
+
+</div>
+
+<script src="js/app.js"></script>
+</body>
+</html>
