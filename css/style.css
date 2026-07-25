@@ -321,6 +321,19 @@ input:focus, select:focus, textarea:focus {
 .check-item .check-name { flex: 1; font-size: 0.95rem; }
 .check-item.checked .check-name { text-decoration: line-through; color: var(--text-muted); }
 
+.todo-due {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  background: var(--surface);
+  border-radius: 999px;
+  padding: 4px 9px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.todo-due.today { color: var(--accent); }
+.todo-due.overdue { color: var(--expense); }
+
 /* Empty hint */
 .empty-hint { color: var(--text-muted); font-size: 0.85rem; text-align: center; padding: 12px 0; }
 

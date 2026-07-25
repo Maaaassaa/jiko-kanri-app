@@ -22,17 +22,18 @@
   function loadState() {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return { records: [], transactions: [], shopping: [], shoppingFreq: {} };
+      if (!raw) return { records: [], transactions: [], shopping: [], shoppingFreq: {}, todos: [] };
       const parsed = JSON.parse(raw);
       return {
         records: parsed.records || [],
         transactions: parsed.transactions || [],
         shopping: parsed.shopping || [],
         shoppingFreq: parsed.shoppingFreq || {},
+        todos: parsed.todos || [],
       };
     } catch (e) {
       console.error('failed to load state', e);
-      return { records: [], transactions: [], shopping: [], shoppingFreq: {} };
+      return { records: [], transactions: [], shopping: [], shoppingFreq: {}, todos: [] };
     }
   }
 
@@ -81,8 +82,8 @@
   }
 
   // ---------- View switching ----------
-  const VIEWS = ['home', 'log', 'money', 'shopping'];
-  const PAGE_TITLES = { home: 'ホーム', log: '記録', money: 'お金', shopping: '買い物リスト' };
+  const VIEWS = ['home', 'log', 'todo', 'money', 'shopping'];
+  const PAGE_TITLES = { home: 'ホーム', log: '記録', todo: 'やることリスト', money: 'お金', shopping: '買い物リスト' };
 
   function switchView(name) {
     VIEWS.forEach((v) => {
@@ -95,6 +96,7 @@
     document.getElementById('views').scrollTop = 0;
     if (name === 'home') renderHome();
     if (name === 'log') renderLog();
+    if (name === 'todo') renderTodo();
     if (name === 'money') renderMoney();
     if (name === 'shopping') renderShopping();
   }
@@ -135,6 +137,9 @@
     const shoppingLeft = state.shopping.filter((i) => !i.checked).length;
     document.getElementById('stat-shopping-left').innerHTML = `${shoppingLeft}<small>個</small>`;
 
+    const todoLeft = state.todos.filter((t) => !t.checked).length;
+    document.getElementById('stat-todo-left').innerHTML = `${todoLeft}<small>件</small>`;
+
     document.getElementById('greeting-text').textContent = greetingByHour();
 
     const recentRecords = [...state.records].sort((a, b) => (b.date + b.time).localeCompare(a.date + a.time)).slice(0, 3);
@@ -147,6 +152,27 @@
         const li = document.createElement('li');
         li.innerHTML = `<span>${escapeHtml(truncate(r.text, 28))}</span><span class="muted">${formatDateLabel(r.date)}</span>`;
         recEl.appendChild(li);
+      });
+    }
+
+    const todoEl = document.getElementById('home-recent-todo');
+    todoEl.innerHTML = '';
+    const pendingTodos = [...state.todos]
+      .filter((t) => !t.checked)
+      .sort((a, b) => {
+        if (!!a.dueDate !== !!b.dueDate) return a.dueDate ? -1 : 1;
+        if (a.dueDate && b.dueDate) return a.dueDate.localeCompare(b.dueDate);
+        return b.createdAt - a.createdAt;
+      })
+      .slice(0, 5);
+    if (pendingTodos.length === 0) {
+      todoEl.innerHTML = '<li class="empty-hint">タスクはありません</li>';
+    } else {
+      pendingTodos.forEach((t) => {
+        const li = document.createElement('li');
+        const dueLabel = t.dueDate ? formatDateLabel(t.dueDate) : '';
+        li.innerHTML = `<span>${escapeHtml(truncate(t.text, 28))}</span>${dueLabel ? `<span class="muted">${dueLabel}</span>` : ''}`;
+        todoEl.appendChild(li);
       });
     }
 
@@ -230,6 +256,90 @@
     save();
     renderLog();
   });
+
+  // ---------- Todo (やることリスト) ----------
+  const todoForm = document.getElementById('todo-form');
+  const todoTextInput = document.getElementById('todo-text');
+  const todoDueInput = document.getElementById('todo-due');
+
+  todoForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const text = todoTextInput.value.trim();
+    if (!text) return;
+    state.todos.push({
+      id: uid(),
+      text,
+      dueDate: todoDueInput.value || null,
+      checked: false,
+      createdAt: Date.now(),
+    });
+    save();
+    todoTextInput.value = '';
+    todoDueInput.value = '';
+    renderTodo();
+  });
+
+  document.getElementById('todo-list').addEventListener('click', (e) => {
+    const checkBtn = e.target.closest('[data-toggle-todo]');
+    if (checkBtn) {
+      const item = state.todos.find((t) => t.id === checkBtn.dataset.toggleTodo);
+      if (item) item.checked = !item.checked;
+      save();
+      renderTodo();
+      return;
+    }
+    const delBtn = e.target.closest('[data-del-todo]');
+    if (delBtn) {
+      const idx = state.todos.findIndex((t) => t.id === delBtn.dataset.delTodo);
+      if (idx !== -1) state.todos.splice(idx, 1);
+      save();
+      renderTodo();
+    }
+  });
+
+  document.getElementById('clear-done-todo-btn').addEventListener('click', () => {
+    const hasChecked = state.todos.some((t) => t.checked);
+    if (!hasChecked) return;
+    state.todos = state.todos.filter((t) => !t.checked);
+    save();
+    renderTodo();
+  });
+
+  function renderTodo() {
+    const listEl = document.getElementById('todo-list');
+    listEl.innerHTML = '';
+    if (state.todos.length === 0) {
+      listEl.innerHTML = '<li class="empty-hint">タスクはありません</li>';
+      return;
+    }
+    const today = todayStr();
+    const sorted = [...state.todos].sort((a, b) => {
+      if (a.checked !== b.checked) return a.checked ? 1 : -1;
+      if (!!a.dueDate !== !!b.dueDate) return a.dueDate ? -1 : 1;
+      if (a.dueDate && b.dueDate) return a.dueDate.localeCompare(b.dueDate);
+      return b.createdAt - a.createdAt;
+    });
+    sorted.forEach((t) => {
+      const li = document.createElement('li');
+      li.className = 'check-item' + (t.checked ? ' checked' : '');
+      let dueHtml = '';
+      if (t.dueDate) {
+        let dueClass = 'todo-due';
+        if (!t.checked) {
+          if (t.dueDate < today) dueClass += ' overdue';
+          else if (t.dueDate === today) dueClass += ' today';
+        }
+        dueHtml = `<span class="${dueClass}">${formatDateLabel(t.dueDate)}</span>`;
+      }
+      li.innerHTML = `
+        <div class="check-box" data-toggle-todo="${t.id}">${t.checked ? '✓' : ''}</div>
+        <div class="check-name">${escapeHtml(t.text)}</div>
+        ${dueHtml}
+        <button class="icon-btn" data-del-todo="${t.id}">✕</button>
+      `;
+      listEl.appendChild(li);
+    });
+  }
 
   // ---------- Money (お金) ----------
   const moneyForm = document.getElementById('money-form');
@@ -464,6 +574,7 @@
     populateCategorySelect('expense');
     renderHome();
     renderLog();
+    renderTodo();
     renderMoney();
     renderShopping();
 

@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
 <title>自己管理</title>
-<meta name="description" content="今日の成果・お金・買い物リストをまとめて管理する自己管理アプリ" />
+<meta name="description" content="今日の成果・やることリスト・お金・買い物リストをまとめて管理する自己管理アプリ" />
 <meta name="theme-color" content="#4f46e5" media="(prefers-color-scheme: light)" />
 <meta name="theme-color" content="#0f172a" media="(prefers-color-scheme: dark)" />
 <link rel="manifest" href="manifest.json" />
@@ -48,6 +48,10 @@
           <span class="stat-label">買い物残り</span>
           <span class="stat-value" id="stat-shopping-left">0<small>個</small></span>
         </div>
+        <div class="stat-card">
+          <span class="stat-label">やること残り</span>
+          <span class="stat-value" id="stat-todo-left">0<small>件</small></span>
+        </div>
       </div>
 
       <div class="card">
@@ -57,6 +61,16 @@
         </div>
         <ul class="mini-list" id="home-recent-records">
           <li class="empty-hint">まだ記録がありません</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h2>やることリスト</h2>
+          <button class="link-btn" data-goto="todo">すべて見る</button>
+        </div>
+        <ul class="mini-list" id="home-recent-todo">
+          <li class="empty-hint">タスクはありません</li>
         </ul>
       </div>
 
@@ -86,6 +100,27 @@
           <h2>記録一覧</h2>
         </div>
         <div id="log-list"></div>
+      </div>
+    </section>
+
+    <!-- やることリスト -->
+    <section id="view-todo" class="view">
+      <form class="card form-card" id="todo-form">
+        <label class="field-label" for="todo-text">やることを追加</label>
+        <input type="text" id="todo-text" placeholder="例）レポートを提出する" autocomplete="off" required />
+        <label class="field-label" for="todo-due">期限（任意）</label>
+        <input type="date" id="todo-due" />
+        <button type="submit" class="primary-btn">追加する</button>
+      </form>
+
+      <div class="card">
+        <div class="card-header">
+          <h2>タスク一覧</h2>
+          <button class="link-btn" id="clear-done-todo-btn">完了を削除</button>
+        </div>
+        <ul class="check-list" id="todo-list">
+          <li class="empty-hint">タスクはありません</li>
+        </ul>
       </div>
     </section>
 
@@ -160,6 +195,7 @@
   <nav class="tabbar">
     <button class="tab active" data-view="home"><span class="icon">🏠</span><span>ホーム</span></button>
     <button class="tab" data-view="log"><span class="icon">📝</span><span>記録</span></button>
+    <button class="tab" data-view="todo"><span class="icon">✅</span><span>やること</span></button>
     <button class="tab" data-view="money"><span class="icon">💰</span><span>お金</span></button>
     <button class="tab" data-view="shopping"><span class="icon">🛒</span><span>買い物</span></button>
   </nav>
