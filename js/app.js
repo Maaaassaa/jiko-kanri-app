@@ -19,21 +19,25 @@
     { id: 'other', label: 'その他', icon: '📦' },
   ];
 
+  function normalizeState(parsed) {
+    parsed = parsed && typeof parsed === 'object' ? parsed : {};
+    return {
+      records: Array.isArray(parsed.records) ? parsed.records : [],
+      transactions: Array.isArray(parsed.transactions) ? parsed.transactions : [],
+      shopping: Array.isArray(parsed.shopping) ? parsed.shopping : [],
+      shoppingFreq: parsed.shoppingFreq && typeof parsed.shoppingFreq === 'object' ? parsed.shoppingFreq : {},
+      todos: Array.isArray(parsed.todos) ? parsed.todos : [],
+    };
+  }
+
   function loadState() {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return { records: [], transactions: [], shopping: [], shoppingFreq: {}, todos: [] };
-      const parsed = JSON.parse(raw);
-      return {
-        records: parsed.records || [],
-        transactions: parsed.transactions || [],
-        shopping: parsed.shopping || [],
-        shoppingFreq: parsed.shoppingFreq || {},
-        todos: parsed.todos || [],
-      };
+      if (!raw) return normalizeState(null);
+      return normalizeState(JSON.parse(raw));
     } catch (e) {
       console.error('failed to load state', e);
-      return { records: [], transactions: [], shopping: [], shoppingFreq: {}, todos: [] };
+      return normalizeState(null);
     }
   }
 
@@ -576,6 +580,58 @@
       listEl.appendChild(li);
     });
   }
+
+  // ---------- Backup (エクスポート/インポート) ----------
+  function exportState() {
+    const dataStr = JSON.stringify(state, null, 2);
+    const blob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `jiko-kanri-backup-${todayStr()}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  function importStateFromFile(file) {
+    const reader = new FileReader();
+    reader.onload = () => {
+      let parsed;
+      try {
+        parsed = JSON.parse(reader.result);
+      } catch (e) {
+        alert('ファイルの読み込みに失敗しました。正しいバックアップファイル（.json）か確認してください。');
+        return;
+      }
+      if (!confirm('現在のデータを上書きしてバックアップを復元します。よろしいですか？')) return;
+      const normalized = normalizeState(parsed);
+      state.records = normalized.records;
+      state.transactions = normalized.transactions;
+      state.shopping = normalized.shopping;
+      state.shoppingFreq = normalized.shoppingFreq;
+      state.todos = normalized.todos;
+      save();
+      renderHome();
+      renderLog();
+      renderTodo();
+      renderMoney();
+      renderShopping();
+      alert('データを復元しました。');
+    };
+    reader.readAsText(file);
+  }
+
+  document.getElementById('export-btn').addEventListener('click', exportState);
+  document.getElementById('import-btn').addEventListener('click', () => {
+    document.getElementById('import-file-input').click();
+  });
+  document.getElementById('import-file-input').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (file) importStateFromFile(file);
+    e.target.value = '';
+  });
 
   // ---------- Init ----------
   function updateTodayBadge() {

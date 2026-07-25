@@ -412,6 +412,12 @@ input:focus, select:focus, textarea:focus {
 .shopping-note.checked { opacity: 0.5; }
 .shopping-note.checked .note-text { text-decoration: line-through; }
 
+/* Backup card */
+.backup-hint { font-size: 0.82rem; color: var(--text-muted); margin: 0 0 12px; line-height: 1.5; }
+.backup-actions { display: flex; gap: 10px; }
+.backup-actions .primary-btn { flex: 1; margin-top: 0; }
+.secondary-btn { background: var(--surface-2); color: var(--text); border: 1px solid var(--border); }
+
 /* Empty hint */
 .empty-hint { color: var(--text-muted); font-size: 0.85rem; text-align: center; padding: 12px 0; }
 

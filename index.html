@@ -83,6 +83,16 @@
           <li class="empty-hint">リストは空です</li>
         </ul>
       </div>
+
+      <div class="card">
+        <div class="card-header"><h2>データのバックアップ</h2></div>
+        <p class="backup-hint">機種変更やブラウザの変更前に、データをファイルへ書き出しておくと安心です。</p>
+        <div class="backup-actions">
+          <button type="button" class="primary-btn small" id="export-btn">📤 エクスポート</button>
+          <button type="button" class="primary-btn small secondary-btn" id="import-btn">📥 インポート</button>
+        </div>
+        <input type="file" id="import-file-input" accept="application/json" style="display:none" />
+      </div>
     </section>
 
     <!-- 記録 -->
