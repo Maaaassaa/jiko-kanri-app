@@ -383,14 +383,23 @@
   // ---------- Habit (習慣) ----------
   const habitForm = document.getElementById('habit-form');
   const habitNameInput = document.getElementById('habit-name');
+  const habitPurposeInput = document.getElementById('habit-purpose');
 
   habitForm.addEventListener('submit', (e) => {
     e.preventDefault();
     const name = habitNameInput.value.trim();
     if (!name) return;
-    state.habits.push({ id: uid(), name, checkins: [], createdAt: Date.now() });
+    state.habits.push({
+      id: uid(),
+      name,
+      purpose: habitPurposeInput.value.trim(),
+      checkins: [],
+      notes: [],
+      createdAt: Date.now(),
+    });
     save();
     habitNameInput.value = '';
+    habitPurposeInput.value = '';
     renderHabit();
   });
 
@@ -423,11 +432,34 @@
   document.getElementById('habit-list').addEventListener('click', (e) => {
     const delBtn = e.target.closest('[data-del-habit]');
     if (delBtn) {
-      if (!confirm('この習慣を削除しますか？記録した達成履歴も削除されます。')) return;
+      if (!confirm('この習慣を削除しますか？記録した達成履歴やメモも削除されます。')) return;
       const idx = state.habits.findIndex((h) => h.id === delBtn.dataset.delHabit);
       if (idx !== -1) state.habits.splice(idx, 1);
       save();
       renderHabit();
+      return;
+    }
+    const editPurposeBtn = e.target.closest('[data-edit-purpose]');
+    if (editPurposeBtn) {
+      const habit = state.habits.find((h) => h.id === editPurposeBtn.dataset.editPurpose);
+      if (habit) {
+        const next = prompt('なぜこの習慣を身につけたいですか？', habit.purpose || '');
+        if (next !== null) {
+          habit.purpose = next.trim();
+          save();
+          renderHabit();
+        }
+      }
+      return;
+    }
+    const delNoteBtn = e.target.closest('[data-del-note]');
+    if (delNoteBtn) {
+      const habit = state.habits.find((h) => h.id === delNoteBtn.dataset.habitId);
+      if (habit) {
+        habit.notes = (habit.notes || []).filter((n) => n.id !== delNoteBtn.dataset.delNote);
+        save();
+        renderHabit();
+      }
       return;
     }
     const checkBtn = e.target.closest('[data-toggle-habit]');
@@ -442,6 +474,22 @@
       save();
       renderHabit();
     }
+  });
+
+  document.getElementById('habit-list').addEventListener('submit', (e) => {
+    const form = e.target.closest('.habit-note-form');
+    if (!form) return;
+    e.preventDefault();
+    const input = form.querySelector('.habit-note-input');
+    const text = input.value.trim();
+    if (!text) return;
+    const habit = state.habits.find((h) => h.id === form.dataset.habitId);
+    if (habit) {
+      if (!habit.notes) habit.notes = [];
+      habit.notes.push({ id: uid(), text, date: dateStrOffset(0), createdAt: Date.now() });
+      save();
+    }
+    renderHabit();
   });
 
   function renderHabit() {
@@ -464,6 +512,24 @@
         heatmapCells.push(`<span class="habit-day${checkinSet.has(d) ? ' filled' : ''}${d === today ? ' is-today' : ''}"></span>`);
       }
 
+      const purposeHtml = habit.purpose
+        ? `<p class="habit-purpose">🎯 ${escapeHtml(habit.purpose)} <button type="button" class="habit-edit-link" data-edit-purpose="${habit.id}">編集</button></p>`
+        : `<button type="button" class="habit-edit-link habit-add-purpose" data-edit-purpose="${habit.id}">+ 目的を追加</button>`;
+
+      const notes = [...(habit.notes || [])].sort((a, b) => b.createdAt - a.createdAt);
+      const notesHtml = notes.length
+        ? notes
+            .map(
+              (n) => `
+        <li class="habit-note-item">
+          <span class="habit-note-text">${escapeHtml(n.text)}</span>
+          <span class="habit-note-date">${formatDateLabel(n.date)}</span>
+          <button class="icon-btn" data-del-note="${n.id}" data-habit-id="${habit.id}">✕</button>
+        </li>`
+            )
+            .join('')
+        : '<li class="empty-hint">まだメモがありません</li>';
+
       const card = document.createElement('div');
       card.className = 'card habit-card';
       card.innerHTML = `
@@ -471,6 +537,7 @@
           <span class="habit-name">${escapeHtml(habit.name)}</span>
           <button class="icon-btn" data-del-habit="${habit.id}">✕</button>
         </div>
+        ${purposeHtml}
         <div class="habit-streak-row">
           <span class="habit-streak">🔥 <strong>${streak}</strong>日連続</span>
           <span class="habit-best">最長 ${longest}日</span>
@@ -479,6 +546,15 @@
         <button type="button" class="habit-check-btn${checkedToday ? ' checked' : ''}" data-toggle-habit="${habit.id}">
           ${checkedToday ? '✓ 今日達成' : '今日やった'}
         </button>
+
+        <div class="habit-notes-section">
+          <div class="habit-notes-header">💡 工夫・気づき（トライ&エラー）</div>
+          <form class="habit-note-form" data-habit-id="${habit.id}">
+            <input type="text" class="habit-note-input" placeholder="例）朝やってみたら続いた" autocomplete="off" />
+            <button type="submit" class="habit-note-submit">追加</button>
+          </form>
+          <ul class="habit-notes-list">${notesHtml}</ul>
+        </div>
       `;
       listEl.appendChild(card);
     });

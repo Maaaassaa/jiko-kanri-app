@@ -141,10 +141,10 @@
     <section id="view-habit" class="view">
       <form class="card form-card" id="habit-form">
         <label class="field-label" for="habit-name">身につけたい習慣</label>
-        <div class="inline-add">
-          <input type="text" id="habit-name" placeholder="例）読書30分" autocomplete="off" required />
-          <button type="submit" class="primary-btn small">追加</button>
-        </div>
+        <input type="text" id="habit-name" placeholder="例）読書30分" autocomplete="off" required />
+        <label class="field-label" for="habit-purpose">なぜこの習慣を身につけたいですか？（任意）</label>
+        <textarea id="habit-purpose" rows="2" placeholder="例）視野を広げて仕事に活かしたいから"></textarea>
+        <button type="submit" class="primary-btn">追加する</button>
       </form>
 
       <div id="habit-list">

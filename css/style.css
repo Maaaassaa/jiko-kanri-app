@@ -270,6 +270,27 @@ input:focus, select:focus, textarea:focus {
   margin-bottom: 8px;
 }
 .habit-name { font-weight: 700; font-size: 0.98rem; }
+.habit-purpose {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  margin: 0 0 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  line-height: 1.4;
+}
+.habit-edit-link {
+  background: none;
+  border: none;
+  color: var(--primary);
+  font-size: 0.76rem;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0;
+  flex-shrink: 0;
+}
+.habit-add-purpose { font-size: 0.82rem; margin-bottom: 10px; }
 .habit-streak-row {
   display: flex;
   justify-content: space-between;
@@ -301,6 +322,44 @@ input:focus, select:focus, textarea:focus {
 }
 .habit-check-btn.checked { background: var(--accent); color: #fff; border-color: var(--accent); }
 .habit-check-btn:active { opacity: 0.8; }
+
+.habit-notes-section {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--border);
+}
+.habit-notes-header {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  margin: 0 0 8px;
+}
+.habit-note-form { display: flex; gap: 6px; margin-bottom: 10px; }
+.habit-note-form input { flex: 1; font-size: 0.85rem; padding: 8px 10px; }
+.habit-note-submit {
+  background: var(--primary);
+  color: var(--primary-contrast);
+  border: none;
+  border-radius: var(--radius-md);
+  padding: 8px 14px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.habit-note-submit:active { opacity: 0.8; }
+.habit-notes-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.habit-note-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--surface-2);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 0.85rem;
+}
+.habit-note-text { flex: 1; line-height: 1.4; }
+.habit-note-date { font-size: 0.7rem; color: var(--text-muted); white-space: nowrap; }
 
 /* Calendar */
 .cal-nav-btn { font-size: 1.3rem; padding: 4px 12px; }
