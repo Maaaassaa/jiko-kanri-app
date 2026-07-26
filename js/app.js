@@ -27,6 +27,7 @@
       shopping: Array.isArray(parsed.shopping) ? parsed.shopping : [],
       shoppingFreq: parsed.shoppingFreq && typeof parsed.shoppingFreq === 'object' ? parsed.shoppingFreq : {},
       todos: Array.isArray(parsed.todos) ? parsed.todos : [],
+      habits: Array.isArray(parsed.habits) ? parsed.habits : [],
     };
   }
 
@@ -59,6 +60,18 @@
   function nowTimeStr() {
     const d = new Date();
     return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+  }
+
+  function dateStrOffset(offsetDays) {
+    const d = new Date();
+    d.setDate(d.getDate() + offsetDays);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }
+
+  function addDaysToDateStr(dateStr, offsetDays) {
+    const d = new Date(dateStr + 'T00:00:00');
+    d.setDate(d.getDate() + offsetDays);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   }
 
   function formatYen(n) {
@@ -97,8 +110,8 @@
   }
 
   // ---------- View switching ----------
-  const VIEWS = ['home', 'log', 'todo', 'money', 'shopping'];
-  const PAGE_TITLES = { home: 'ホーム', log: '記録', todo: 'やることリスト', money: 'お金', shopping: '買い物リスト' };
+  const VIEWS = ['home', 'log', 'habit', 'todo', 'money', 'shopping'];
+  const PAGE_TITLES = { home: 'ホーム', log: '記録', habit: '習慣', todo: 'やることリスト', money: 'お金', shopping: '買い物リスト' };
 
   function switchView(name) {
     VIEWS.forEach((v) => {
@@ -111,6 +124,7 @@
     document.getElementById('views').scrollTop = 0;
     if (name === 'home') renderHome();
     if (name === 'log') { renderCalendar(); renderLog(); }
+    if (name === 'habit') renderHabit();
     if (name === 'todo') renderTodo();
     if (name === 'money') renderMoney();
     if (name === 'shopping') renderShopping();
@@ -155,6 +169,9 @@
     const todoLeft = state.todos.filter((t) => !t.checked).length;
     document.getElementById('stat-todo-left').innerHTML = `${todoLeft}<small>件</small>`;
 
+    const habitDoneToday = state.habits.filter((h) => h.checkins.includes(today)).length;
+    document.getElementById('stat-habit-today').innerHTML = `${habitDoneToday}<small>/${state.habits.length}</small>`;
+
     document.getElementById('greeting-text').textContent = greetingByHour();
 
     const recentRecords = [...state.records].sort((a, b) => (b.date + b.time).localeCompare(a.date + a.time)).slice(0, 3);
@@ -167,6 +184,19 @@
         const li = document.createElement('li');
         li.innerHTML = `<span>${escapeHtml(truncate(r.text, 28))}</span><span class="muted">${formatDateLabel(r.date)}</span>`;
         recEl.appendChild(li);
+      });
+    }
+
+    const habitEl = document.getElementById('home-recent-habit');
+    habitEl.innerHTML = '';
+    if (state.habits.length === 0) {
+      habitEl.innerHTML = '<li class="empty-hint">習慣が登録されていません</li>';
+    } else {
+      state.habits.slice(0, 5).forEach((h) => {
+        const done = h.checkins.includes(today);
+        const li = document.createElement('li');
+        li.innerHTML = `<span>${escapeHtml(h.name)}</span><span class="muted">${done ? '✓ 達成' : '未達成'}</span>`;
+        habitEl.appendChild(li);
       });
     }
 
@@ -349,6 +379,110 @@
     save();
     renderLog();
   });
+
+  // ---------- Habit (習慣) ----------
+  const habitForm = document.getElementById('habit-form');
+  const habitNameInput = document.getElementById('habit-name');
+
+  habitForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const name = habitNameInput.value.trim();
+    if (!name) return;
+    state.habits.push({ id: uid(), name, checkins: [], createdAt: Date.now() });
+    save();
+    habitNameInput.value = '';
+    renderHabit();
+  });
+
+  function computeStreak(checkinSet) {
+    let streak = 0;
+    let offset = checkinSet.has(dateStrOffset(0)) ? 0 : -1;
+    while (checkinSet.has(dateStrOffset(offset))) {
+      streak++;
+      offset--;
+    }
+    return streak;
+  }
+
+  function computeLongestStreak(checkins) {
+    if (checkins.length === 0) return 0;
+    const sorted = [...checkins].sort();
+    let longest = 1;
+    let current = 1;
+    for (let i = 1; i < sorted.length; i++) {
+      if (sorted[i] === addDaysToDateStr(sorted[i - 1], 1)) {
+        current++;
+      } else if (sorted[i] !== sorted[i - 1]) {
+        current = 1;
+      }
+      if (current > longest) longest = current;
+    }
+    return longest;
+  }
+
+  document.getElementById('habit-list').addEventListener('click', (e) => {
+    const delBtn = e.target.closest('[data-del-habit]');
+    if (delBtn) {
+      if (!confirm('この習慣を削除しますか？記録した達成履歴も削除されます。')) return;
+      const idx = state.habits.findIndex((h) => h.id === delBtn.dataset.delHabit);
+      if (idx !== -1) state.habits.splice(idx, 1);
+      save();
+      renderHabit();
+      return;
+    }
+    const checkBtn = e.target.closest('[data-toggle-habit]');
+    if (checkBtn) {
+      const habit = state.habits.find((h) => h.id === checkBtn.dataset.toggleHabit);
+      if (habit) {
+        const today = dateStrOffset(0);
+        const idx = habit.checkins.indexOf(today);
+        if (idx === -1) habit.checkins.push(today);
+        else habit.checkins.splice(idx, 1);
+      }
+      save();
+      renderHabit();
+    }
+  });
+
+  function renderHabit() {
+    const listEl = document.getElementById('habit-list');
+    listEl.innerHTML = '';
+    if (state.habits.length === 0) {
+      listEl.innerHTML = '<p class="empty-hint">まだ習慣が登録されていません。身につけたいことを追加してみましょう。</p>';
+      return;
+    }
+    const today = dateStrOffset(0);
+    state.habits.forEach((habit) => {
+      const checkinSet = new Set(habit.checkins);
+      const streak = computeStreak(checkinSet);
+      const longest = computeLongestStreak(habit.checkins);
+      const checkedToday = checkinSet.has(today);
+
+      const heatmapCells = [];
+      for (let i = 13; i >= 0; i--) {
+        const d = dateStrOffset(-i);
+        heatmapCells.push(`<span class="habit-day${checkinSet.has(d) ? ' filled' : ''}${d === today ? ' is-today' : ''}"></span>`);
+      }
+
+      const card = document.createElement('div');
+      card.className = 'card habit-card';
+      card.innerHTML = `
+        <div class="habit-card-header">
+          <span class="habit-name">${escapeHtml(habit.name)}</span>
+          <button class="icon-btn" data-del-habit="${habit.id}">✕</button>
+        </div>
+        <div class="habit-streak-row">
+          <span class="habit-streak">🔥 <strong>${streak}</strong>日連続</span>
+          <span class="habit-best">最長 ${longest}日</span>
+        </div>
+        <div class="habit-heatmap">${heatmapCells.join('')}</div>
+        <button type="button" class="habit-check-btn${checkedToday ? ' checked' : ''}" data-toggle-habit="${habit.id}">
+          ${checkedToday ? '✓ 今日達成' : '今日やった'}
+        </button>
+      `;
+      listEl.appendChild(card);
+    });
+  }
 
   // ---------- Todo (やることリスト) ----------
   const todoForm = document.getElementById('todo-form');
@@ -742,6 +876,7 @@
     renderHome();
     renderCalendar();
     renderLog();
+    renderHabit();
     renderTodo();
     renderMoney();
     renderShopping();
