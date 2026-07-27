@@ -602,6 +602,16 @@ input:focus, select:focus, textarea:focus {
 .todo-due.today { background: rgba(16,185,129,0.4); }
 .todo-due.overdue { background: rgba(239,68,68,0.4); }
 
+.wish-date {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: inherit;
+  background: rgba(255,255,255,0.5);
+  border-radius: 999px;
+  padding: 3px 10px;
+}
+
 /* 買い物 notes (grid of small square-ish notes) */
 .shopping-note {
   cursor: pointer;

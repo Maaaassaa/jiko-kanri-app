@@ -28,6 +28,7 @@
       shoppingFreq: parsed.shoppingFreq && typeof parsed.shoppingFreq === 'object' ? parsed.shoppingFreq : {},
       todos: Array.isArray(parsed.todos) ? parsed.todos : [],
       habits: Array.isArray(parsed.habits) ? parsed.habits : [],
+      wishes: Array.isArray(parsed.wishes) ? parsed.wishes : [],
     };
   }
 
@@ -125,7 +126,7 @@
     if (name === 'home') renderHome();
     if (name === 'log') { renderCalendar(); renderLog(); }
     if (name === 'habit') renderHabit();
-    if (name === 'todo') renderTodo();
+    if (name === 'todo') { renderTodo(); renderWish(); }
     if (name === 'money') renderMoney();
     if (name === 'shopping') renderShopping();
   }
@@ -171,6 +172,9 @@
 
     const habitDoneToday = state.habits.filter((h) => h.checkins.includes(today)).length;
     document.getElementById('stat-habit-today').innerHTML = `${habitDoneToday}<small>/${state.habits.length}</small>`;
+
+    const wishLeft = state.wishes.filter((w) => !w.checked).length;
+    document.getElementById('stat-wish-left').innerHTML = `${wishLeft}<small>件</small>`;
 
     document.getElementById('greeting-text').textContent = greetingByHour();
 
@@ -218,6 +222,19 @@
         const dueLabel = t.dueDate ? formatDateLabel(t.dueDate) : '';
         li.innerHTML = `<span>${escapeHtml(truncate(t.text, 28))}</span>${dueLabel ? `<span class="muted">${dueLabel}</span>` : ''}`;
         todoEl.appendChild(li);
+      });
+    }
+
+    const wishEl = document.getElementById('home-recent-wish');
+    wishEl.innerHTML = '';
+    const pendingWishes = [...state.wishes].filter((w) => !w.checked).sort((a, b) => b.createdAt - a.createdAt).slice(0, 5);
+    if (pendingWishes.length === 0) {
+      wishEl.innerHTML = '<li class="empty-hint">やりたいことはまだ登録されていません</li>';
+    } else {
+      pendingWishes.forEach((w) => {
+        const li = document.createElement('li');
+        li.innerHTML = `<span>${escapeHtml(truncate(w.text, 28))}</span><span class="muted">${formatDateLabel(w.date)}</span>`;
+        wishEl.appendChild(li);
       });
     }
 
@@ -742,6 +759,83 @@
     });
   }
 
+  // ---------- Wish (やりたいことリスト) ----------
+  const wishForm = document.getElementById('wish-form');
+  const wishTextInput = document.getElementById('wish-text');
+
+  wishForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const text = wishTextInput.value.trim();
+    if (!text) return;
+    state.wishes.push({ id: uid(), text, date: dateStrOffset(0), checked: false, createdAt: Date.now() });
+    save();
+    wishTextInput.value = '';
+    renderWish();
+  });
+
+  document.getElementById('wish-list').addEventListener('click', (e) => {
+    const delBtn = e.target.closest('[data-del-wish]');
+    if (delBtn) {
+      const idx = state.wishes.findIndex((w) => w.id === delBtn.dataset.delWish);
+      if (idx !== -1) state.wishes.splice(idx, 1);
+      save();
+      renderWish();
+      return;
+    }
+    const checkBtn = e.target.closest('[data-toggle-wish]');
+    if (checkBtn) {
+      const wish = state.wishes.find((w) => w.id === checkBtn.dataset.toggleWish);
+      if (wish) wish.checked = !wish.checked;
+      save();
+      renderWish();
+    }
+  });
+
+  document.getElementById('clear-done-wish-btn').addEventListener('click', () => {
+    const doneWishes = state.wishes.filter((w) => w.checked);
+    if (doneWishes.length === 0) return;
+    const today = todayStr();
+    const time = nowTimeStr();
+    doneWishes.forEach((w) => {
+      state.records.push({
+        id: uid(),
+        date: today,
+        time,
+        text: `✨ ${w.text}`,
+        createdAt: Date.now(),
+      });
+    });
+    state.wishes = state.wishes.filter((w) => !w.checked);
+    save();
+    renderWish();
+  });
+
+  function renderWish() {
+    const listEl = document.getElementById('wish-list');
+    listEl.innerHTML = '';
+    if (state.wishes.length === 0) {
+      listEl.innerHTML = '<li class="empty-hint">やりたいことはまだ登録されていません</li>';
+      return;
+    }
+    const sorted = [...state.wishes].sort((a, b) => {
+      if (a.checked !== b.checked) return a.checked ? 1 : -1;
+      return b.createdAt - a.createdAt;
+    });
+    sorted.forEach((w) => {
+      const { colorClass, rot } = noteStyle(w.id);
+      const li = document.createElement('li');
+      li.className = `sticky-note todo-note ${colorClass}` + (w.checked ? ' checked' : '');
+      li.style.setProperty('--rot', `${rot}deg`);
+      li.dataset.toggleWish = w.id;
+      li.innerHTML = `
+        <button class="note-del" data-del-wish="${w.id}">✕</button>
+        <p class="note-text">${escapeHtml(w.text)}</p>
+        <span class="wish-date">${formatDateLabel(w.date)}</span>
+      `;
+      listEl.appendChild(li);
+    });
+  }
+
   // ---------- Money (お金) ----------
   const moneyForm = document.getElementById('money-form');
   const moneyTypeInput = document.getElementById('money-type');
@@ -1039,6 +1133,7 @@
     renderLog();
     renderHabit();
     renderTodo();
+    renderWish();
     renderMoney();
     renderShopping();
 

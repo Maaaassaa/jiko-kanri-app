@@ -56,6 +56,10 @@
           <span class="stat-label">今日の習慣</span>
           <span class="stat-value" id="stat-habit-today">0<small>/0</small></span>
         </div>
+        <div class="stat-card">
+          <span class="stat-label">やりたいこと</span>
+          <span class="stat-value" id="stat-wish-left">0<small>件</small></span>
+        </div>
       </div>
 
       <div class="card">
@@ -85,6 +89,16 @@
         </div>
         <ul class="mini-list" id="home-recent-todo">
           <li class="empty-hint">タスクはありません</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h2>やりたいことリスト</h2>
+          <button class="link-btn" data-goto="todo">すべて見る</button>
+        </div>
+        <ul class="mini-list" id="home-recent-wish">
+          <li class="empty-hint">やりたいことはまだ登録されていません</li>
         </ul>
       </div>
 
@@ -176,6 +190,22 @@
         </div>
         <ul class="check-list" id="todo-list">
           <li class="empty-hint">タスクはありません</li>
+        </ul>
+      </div>
+
+      <form class="form-card sticky-note compose-note note-blue" id="wish-form">
+        <label class="field-label" for="wish-text">やりたいことを追加</label>
+        <input type="text" id="wish-text" placeholder="例）沖縄旅行に行く" autocomplete="off" required />
+        <button type="submit" class="primary-btn">追加する</button>
+      </form>
+
+      <div class="card">
+        <div class="card-header">
+          <h2>やりたいことリスト</h2>
+          <button class="link-btn" id="clear-done-wish-btn">達成済みを削除</button>
+        </div>
+        <ul class="check-list" id="wish-list">
+          <li class="empty-hint">やりたいことはまだ登録されていません</li>
         </ul>
       </div>
     </section>
