@@ -30,6 +30,7 @@
       habits: Array.isArray(parsed.habits) ? parsed.habits : [],
       wishes: Array.isArray(parsed.wishes) ? parsed.wishes : [],
       belongings: Array.isArray(parsed.belongings) ? parsed.belongings : [],
+      belongingCategories: Array.isArray(parsed.belongingCategories) ? parsed.belongingCategories : [],
     };
   }
 
@@ -1163,13 +1164,24 @@
   });
 
   // ---------- Belongings (持ち物) ----------
-  const BELONGING_CATEGORIES = {
-    daily: { icon: '🧴', label: '日用品' },
-    electronics: { icon: '💻', label: '電化製品' },
-    other: { icon: '📦', label: 'その他' },
-  };
+  const DEFAULT_BELONGING_CATEGORIES = [
+    { id: 'daily', icon: '🧴', label: '日用品' },
+    { id: 'electronics', icon: '💻', label: '電化製品' },
+    { id: 'other', icon: '📦', label: 'その他' },
+  ];
+  const ADD_CATEGORY_VALUE = '__add_new__';
+
+  function getBelongingCategories() {
+    return [...DEFAULT_BELONGING_CATEGORIES, ...state.belongingCategories];
+  }
+
+  function getBelongingCategoryMeta(id) {
+    return getBelongingCategories().find((c) => c.id === id) || DEFAULT_BELONGING_CATEGORIES[2];
+  }
+
   let belongingFilter = 'all';
   let pendingBelongingPhoto = null;
+  let lastBelongingCategoryValue = DEFAULT_BELONGING_CATEGORIES[0].id;
 
   const belongingForm = document.getElementById('belonging-form');
   const belongingNameInput = document.getElementById('belonging-name');
@@ -1182,6 +1194,40 @@
   const belongingPhotoInput = document.getElementById('belonging-photo-input');
   const belongingPhotoPreview = document.getElementById('belonging-photo-preview');
   const belongingPhotoPlaceholderText = document.getElementById('belonging-photo-placeholder-text');
+
+  function populateBelongingCategorySelect(selectedId) {
+    belongingCategorySelect.innerHTML = '';
+    getBelongingCategories().forEach((c) => {
+      const opt = document.createElement('option');
+      opt.value = c.id;
+      opt.textContent = `${c.icon} ${c.label}`;
+      belongingCategorySelect.appendChild(opt);
+    });
+    const addOpt = document.createElement('option');
+    addOpt.value = ADD_CATEGORY_VALUE;
+    addOpt.textContent = '＋ 新しいカテゴリを追加';
+    belongingCategorySelect.appendChild(addOpt);
+    belongingCategorySelect.value = selectedId || DEFAULT_BELONGING_CATEGORIES[0].id;
+  }
+
+  belongingCategorySelect.addEventListener('change', () => {
+    if (belongingCategorySelect.value !== ADD_CATEGORY_VALUE) {
+      lastBelongingCategoryValue = belongingCategorySelect.value;
+      return;
+    }
+    const name = prompt('新しいカテゴリ名を入力してください');
+    const trimmed = (name || '').trim();
+    if (!trimmed) {
+      belongingCategorySelect.value = lastBelongingCategoryValue;
+      return;
+    }
+    const newCategory = { id: uid(), icon: '🏷️', label: trimmed };
+    state.belongingCategories.push(newCategory);
+    save();
+    populateBelongingCategorySelect(newCategory.id);
+    lastBelongingCategoryValue = newCategory.id;
+    renderBelongings();
+  });
 
   belongingPhotoInput.addEventListener('change', async (e) => {
     const file = e.target.files[0];
@@ -1199,6 +1245,8 @@
 
   function resetBelongingForm() {
     belongingForm.reset();
+    populateBelongingCategorySelect(DEFAULT_BELONGING_CATEGORIES[0].id);
+    lastBelongingCategoryValue = DEFAULT_BELONGING_CATEGORIES[0].id;
     pendingBelongingPhoto = null;
     belongingPhotoPreview.src = '';
     belongingPhotoPreview.style.display = 'none';
@@ -1232,9 +1280,28 @@
     const chip = e.target.closest('[data-filter]');
     if (!chip) return;
     belongingFilter = chip.dataset.filter;
-    document.querySelectorAll('#belonging-filter-chips .chip').forEach((c) => c.classList.toggle('active', c === chip));
     renderBelongings();
   });
+
+  function renderBelongingFilterChips() {
+    const chipRow = document.getElementById('belonging-filter-chips');
+    chipRow.innerHTML = '';
+    const allChip = document.createElement('button');
+    allChip.type = 'button';
+    allChip.className = 'chip' + (belongingFilter === 'all' ? ' active' : '');
+    allChip.dataset.filter = 'all';
+    allChip.textContent = 'すべて';
+    chipRow.appendChild(allChip);
+
+    getBelongingCategories().forEach((c) => {
+      const chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = 'chip' + (belongingFilter === c.id ? ' active' : '');
+      chip.dataset.filter = c.id;
+      chip.textContent = `${c.icon} ${c.label}`;
+      chipRow.appendChild(chip);
+    });
+  }
 
   document.getElementById('belonging-list').addEventListener('click', (e) => {
     const delBtn = e.target.closest('[data-del-belonging]');
@@ -1247,6 +1314,7 @@
   });
 
   function renderBelongings() {
+    renderBelongingFilterChips();
     const listEl = document.getElementById('belonging-list');
     listEl.innerHTML = '';
     const filtered =
@@ -1257,7 +1325,7 @@
     }
     const sorted = [...filtered].sort((a, b) => b.createdAt - a.createdAt);
     sorted.forEach((b) => {
-      const meta = BELONGING_CATEGORIES[b.category] || BELONGING_CATEGORIES.other;
+      const meta = getBelongingCategoryMeta(b.category);
       const photoHtml = b.photo
         ? `<img class="belonging-photo" src="${b.photo}" alt="">`
         : `<div class="belonging-photo-placeholder">${meta.icon}</div>`;
@@ -1311,6 +1379,7 @@
     renderWish();
     renderMoney();
     renderShopping();
+    populateBelongingCategorySelect(DEFAULT_BELONGING_CATEGORIES[0].id);
     renderBelongings();
 
     if ('serviceWorker' in navigator) {

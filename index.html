@@ -291,11 +291,7 @@
         <input type="text" id="belonging-name" placeholder="例）歯磨き粉" autocomplete="off" required />
 
         <label class="field-label" for="belonging-category">カテゴリ</label>
-        <select id="belonging-category">
-          <option value="daily">🧴 日用品</option>
-          <option value="electronics">💻 電化製品</option>
-          <option value="other">📦 その他</option>
-        </select>
+        <select id="belonging-category"></select>
 
         <label class="field-label" for="belonging-maker">メーカー（任意）</label>
         <input type="text" id="belonging-maker" placeholder="例）花王" autocomplete="off" />
@@ -315,12 +311,7 @@
         <button type="submit" class="primary-btn">追加する</button>
       </form>
 
-      <div class="chip-row belonging-filter-row" id="belonging-filter-chips">
-        <button type="button" class="chip active" data-filter="all">すべて</button>
-        <button type="button" class="chip" data-filter="daily">🧴 日用品</button>
-        <button type="button" class="chip" data-filter="electronics">💻 電化製品</button>
-        <button type="button" class="chip" data-filter="other">📦 その他</button>
-      </div>
+      <div class="chip-row belonging-filter-row" id="belonging-filter-chips"></div>
 
       <div id="belonging-list">
         <p class="empty-hint">まだ持ち物が登録されていません</p>
