@@ -201,8 +201,6 @@
 
   function renderHome() {
     const today = todayStr();
-    const todayRecords = state.records.filter((r) => r.date === today);
-    document.getElementById('stat-records').innerHTML = `${todayRecords.length}<small>件</small>`;
 
     const todayExpense = state.transactions
       .filter((t) => t.date === today && t.type === 'expense')
@@ -215,23 +213,7 @@
     const monthExpense = monthTx.filter((t) => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
     document.getElementById('stat-balance-month').textContent = formatYen(monthIncome - monthExpense);
 
-    const shoppingLeft = state.shopping.filter((i) => !i.checked).length;
-    document.getElementById('stat-shopping-left').innerHTML = `${shoppingLeft}<small>個</small>`;
-
-    const todoLeft = state.todos.filter((t) => !t.checked).length;
-    document.getElementById('stat-todo-left').innerHTML = `${todoLeft}<small>件</small>`;
-
     const activeHabits = state.habits.filter((h) => !h.mastered);
-    const habitDoneToday = activeHabits.filter((h) => h.checkins.includes(today)).length;
-    document.getElementById('stat-habit-today').innerHTML = `${habitDoneToday}<small>/${activeHabits.length}</small>`;
-
-    const wishLeft = state.wishes.filter((w) => !w.checked).length;
-    document.getElementById('stat-wish-left').innerHTML = `${wishLeft}<small>件</small>`;
-
-    const buyWishLeft = state.buyWishes.filter((w) => !w.checked).length;
-    document.getElementById('stat-buy-wish-left').innerHTML = `${buyWishLeft}<small>件</small>`;
-
-    document.getElementById('stat-memo-count').innerHTML = `${state.memos.length}<small>件</small>`;
 
     document.getElementById('greeting-text').textContent = greetingByHour();
 
