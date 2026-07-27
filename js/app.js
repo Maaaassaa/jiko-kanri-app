@@ -469,10 +469,6 @@
   const habitNameInput = document.getElementById('habit-name');
   const habitPurposeInput = document.getElementById('habit-purpose');
   const habitTimeInput = document.getElementById('habit-time');
-  const habitFrequencyInput = document.getElementById('habit-frequency');
-  const habitIntervalRow = document.getElementById('habit-interval-row');
-  const habitIntervalMonthsInput = document.getElementById('habit-interval-months');
-  const HABIT_MASTERY_DAYS = 21;
   const TIME_OF_DAY_META = {
     anytime: { icon: '🕐', label: 'いつでも', heading: '🕐 いつでもの習慣' },
     morning: { icon: '☀️', label: '午前', heading: '☀️ 午前の習慣' },
@@ -488,35 +484,15 @@
     });
   });
 
-  document.querySelectorAll('#habit-frequency-toggle .seg-btn').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('#habit-frequency-toggle .seg-btn').forEach((b) => b.classList.remove('active'));
-      btn.classList.add('active');
-      habitFrequencyInput.value = btn.dataset.freq;
-      habitIntervalRow.style.display = btn.dataset.freq === 'custom' ? '' : 'none';
-    });
-  });
-
-  function habitFrequencyLabel(frequency, intervalMonths) {
-    if (frequency === 'monthly') return '🗓️ 毎月';
-    if (frequency === 'custom') return `🗓️ ${intervalMonths || 3}ヶ月ごと`;
-    return '🗓️ 毎日';
-  }
-
   habitForm.addEventListener('submit', (e) => {
     e.preventDefault();
     const name = habitNameInput.value.trim();
     if (!name) return;
-    const frequency = habitFrequencyInput.value;
-    const intervalMonths =
-      frequency === 'monthly' ? 1 : frequency === 'custom' ? parseInt(habitIntervalMonthsInput.value, 10) || 3 : null;
     state.habits.push({
       id: uid(),
       name,
       purpose: habitPurposeInput.value.trim(),
       timeOfDay: habitTimeInput.value,
-      frequency,
-      intervalMonths,
       checkins: [],
       notes: [],
       mastered: false,
@@ -529,12 +505,6 @@
     habitTimeInput.value = 'anytime';
     document.querySelectorAll('#habit-time-toggle .seg-btn').forEach((b) => {
       b.classList.toggle('active', b.dataset.time === 'anytime');
-    });
-    habitFrequencyInput.value = 'daily';
-    habitIntervalMonthsInput.value = '3';
-    habitIntervalRow.style.display = 'none';
-    document.querySelectorAll('#habit-frequency-toggle .seg-btn').forEach((b) => {
-      b.classList.toggle('active', b.dataset.freq === 'daily');
     });
     renderHabit();
   });
@@ -563,57 +533,6 @@
       if (current > longest) longest = current;
     }
     return longest;
-  }
-
-  function monthIndex(dateStr) {
-    const [y, m] = dateStr.split('-').map(Number);
-    return y * 12 + (m - 1);
-  }
-
-  function computeMonthlyStreak(checkins, intervalMonths) {
-    if (checkins.length === 0) return 0;
-    const months = [...new Set(checkins.map(monthIndex))].sort((a, b) => b - a);
-    const currentMonth = monthIndex(dateStrOffset(0));
-    if (currentMonth - months[0] > intervalMonths) return 0;
-    let streak = 1;
-    for (let i = 1; i < months.length; i++) {
-      if (months[i - 1] - months[i] <= intervalMonths) streak++;
-      else break;
-    }
-    return streak;
-  }
-
-  function computeMonthlyLongestStreak(checkins, intervalMonths) {
-    if (checkins.length === 0) return 0;
-    const months = [...new Set(checkins.map(monthIndex))].sort((a, b) => a - b);
-    let longest = 1;
-    let current = 1;
-    for (let i = 1; i < months.length; i++) {
-      if (months[i] - months[i - 1] <= intervalMonths) current++;
-      else current = 1;
-      if (current > longest) longest = current;
-    }
-    return longest;
-  }
-
-  function getHabitStreakInfo(habit) {
-    const frequency = habit.frequency || 'daily';
-    if (frequency === 'daily') {
-      return { streak: computeStreak(new Set(habit.checkins)), longest: computeLongestStreak(habit.checkins), unit: '日' };
-    }
-    const intervalMonths = frequency === 'monthly' ? 1 : habit.intervalMonths || 3;
-    return {
-      streak: computeMonthlyStreak(habit.checkins, intervalMonths),
-      longest: computeMonthlyLongestStreak(habit.checkins, intervalMonths),
-      unit: '回',
-    };
-  }
-
-  function isHabitCheckedInCurrentPeriod(habit) {
-    const today = dateStrOffset(0);
-    if ((habit.frequency || 'daily') === 'daily') return habit.checkins.includes(today);
-    const currentMonth = monthIndex(today);
-    return habit.checkins.some((d) => monthIndex(d) === currentMonth);
   }
 
   document.getElementById('habit-list').addEventListener('click', (e) => {
@@ -661,39 +580,32 @@
       }
       return;
     }
+    const markMasteredBtn = e.target.closest('[data-mark-mastered]');
+    if (markMasteredBtn) {
+      const habit = state.habits.find((h) => h.id === markMasteredBtn.dataset.markMastered);
+      if (habit && !habit.mastered) {
+        habit.mastered = true;
+        habit.masteredAt = dateStrOffset(0);
+        state.records.push({
+          id: uid(),
+          date: todayStr(),
+          time: nowTimeStr(),
+          text: `🏆「${habit.name}」が習慣になりました！`,
+          createdAt: Date.now(),
+        });
+        save();
+        renderHabit();
+      }
+      return;
+    }
     const checkBtn = e.target.closest('[data-toggle-habit]');
     if (checkBtn) {
       const habit = state.habits.find((h) => h.id === checkBtn.dataset.toggleHabit);
       if (habit) {
         const today = dateStrOffset(0);
-        const frequency = habit.frequency || 'daily';
-        if (frequency === 'daily') {
-          const idx = habit.checkins.indexOf(today);
-          if (idx === -1) {
-            habit.checkins.push(today);
-            const streak = computeStreak(new Set(habit.checkins));
-            if (streak >= HABIT_MASTERY_DAYS && !habit.mastered) {
-              habit.mastered = true;
-              habit.masteredAt = today;
-              state.records.push({
-                id: uid(),
-                date: today,
-                time: nowTimeStr(),
-                text: `🏆「${habit.name}」が${HABIT_MASTERY_DAYS}日間続き、習慣になりました！`,
-                createdAt: Date.now(),
-              });
-            }
-          } else {
-            habit.checkins.splice(idx, 1);
-          }
-        } else {
-          const currentMonth = monthIndex(today);
-          if (isHabitCheckedInCurrentPeriod(habit)) {
-            habit.checkins = habit.checkins.filter((d) => monthIndex(d) !== currentMonth);
-          } else {
-            habit.checkins.push(today);
-          }
-        }
+        const idx = habit.checkins.indexOf(today);
+        if (idx === -1) habit.checkins.push(today);
+        else habit.checkins.splice(idx, 1);
       }
       save();
       renderHabit();
@@ -739,14 +651,12 @@
   }
 
   function buildHabitCardHtml(habit) {
+    const today = dateStrOffset(0);
     const checkinSet = new Set(habit.checkins);
-    const frequency = habit.frequency || 'daily';
-    const { streak, longest, unit } = getHabitStreakInfo(habit);
-    const checkedNow = isHabitCheckedInCurrentPeriod(habit);
+    const streak = computeStreak(checkinSet);
+    const longest = computeLongestStreak(habit.checkins);
+    const checkedToday = checkinSet.has(today);
     const timeMeta = TIME_OF_DAY_META[habit.timeOfDay || 'anytime'];
-    const freqLabel = habitFrequencyLabel(frequency, habit.intervalMonths);
-    const checkLabel = frequency === 'daily' ? '今日やった' : '今月やった';
-    const checkedLabel = frequency === 'daily' ? '✓ 今日達成' : '✓ 今月達成';
 
     const purposeHtml = habit.purpose
       ? `<p class="habit-purpose">🎯 ${escapeHtml(habit.purpose)} <button type="button" class="habit-edit-link" data-edit-purpose="${habit.id}">編集</button></p>`
@@ -754,7 +664,7 @@
 
     const masteredHtml = habit.mastered
       ? `<p class="habit-mastered-badge">🏅 習慣化達成（${formatDateLabel(habit.masteredAt)}）</p>`
-      : '';
+      : `<button type="button" class="habit-mastery-btn" data-mark-mastered="${habit.id}">🏅 身についた習慣にする</button>`;
 
     const notes = [...(habit.notes || [])].sort((a, b) => b.createdAt - a.createdAt);
     const notesHtml = notes.length
@@ -773,21 +683,18 @@
     return `
       <div class="habit-card-header">
         <span class="habit-name">${escapeHtml(habit.name)}</span>
-        <button class="icon-btn" data-del-habit="${habit.id}">✕</button>
-      </div>
-      <div class="habit-badge-row">
         <button type="button" class="habit-time-badge" data-cycle-time="${habit.id}">${timeMeta.icon} ${timeMeta.label}</button>
-        <span class="habit-freq-badge">${freqLabel}</span>
+        <button class="icon-btn" data-del-habit="${habit.id}">✕</button>
       </div>
       ${purposeHtml}
       ${masteredHtml}
       <div class="habit-streak-row">
-        <span class="habit-streak">🔥 <strong>${streak}</strong>${unit}連続</span>
-        <span class="habit-best">最長 ${longest}${unit}</span>
+        <span class="habit-streak">🔥 <strong>${streak}</strong>日連続</span>
+        <span class="habit-best">最長 ${longest}日</span>
       </div>
       <div class="habit-calendar">${buildHabitCalendarHtml(checkinSet)}</div>
-      <button type="button" class="habit-check-btn${checkedNow ? ' checked' : ''}" data-toggle-habit="${habit.id}">
-        ${checkedNow ? checkedLabel : checkLabel}
+      <button type="button" class="habit-check-btn${checkedToday ? ' checked' : ''}" data-toggle-habit="${habit.id}">
+        ${checkedToday ? '✓ 今日達成' : '今日やった'}
       </button>
 
       <div class="habit-notes-section">
