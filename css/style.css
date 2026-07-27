@@ -139,6 +139,24 @@ main#views {
   cursor: pointer;
 }
 
+.home-card-actions { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+.reorder-btn {
+  border: none;
+  background: var(--surface-2);
+  color: var(--text-muted);
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  font-size: 0.62rem;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.reorder-btn:active { background: var(--border); }
+.reorder-btn:disabled { opacity: 0.3; cursor: default; }
+
 /* Forms */
 .form-card { display: flex; flex-direction: column; gap: 8px; }
 .field-label { font-size: 0.8rem; font-weight: 600; color: var(--text-muted); margin-top: 4px; }

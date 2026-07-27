@@ -19,6 +19,14 @@
     { id: 'other', label: 'その他', icon: '📦' },
   ];
 
+  const HOME_CARD_KEYS = ['memo', 'records', 'habit', 'todo', 'wish', 'shopping', 'buyWish', 'backup'];
+
+  function normalizeHomeCardOrder(order) {
+    const valid = Array.isArray(order) ? order.filter((k) => HOME_CARD_KEYS.includes(k)) : [];
+    const missing = HOME_CARD_KEYS.filter((k) => !valid.includes(k));
+    return [...valid, ...missing];
+  }
+
   function normalizeState(parsed) {
     parsed = parsed && typeof parsed === 'object' ? parsed : {};
     return {
@@ -33,6 +41,7 @@
       belongings: Array.isArray(parsed.belongings) ? parsed.belongings : [],
       belongingCategories: Array.isArray(parsed.belongingCategories) ? parsed.belongingCategories : [],
       memos: Array.isArray(parsed.memos) ? parsed.memos : [],
+      homeCardOrder: normalizeHomeCardOrder(parsed.homeCardOrder),
     };
   }
 
@@ -318,7 +327,42 @@
         buyWishEl.appendChild(li);
       });
     }
+
+    applyHomeCardOrder();
   }
+
+  function applyHomeCardOrder() {
+    const container = document.getElementById('home-cards');
+    state.homeCardOrder.forEach((key) => {
+      const el = container.querySelector(`[data-card-key="${key}"]`);
+      if (el) container.appendChild(el);
+    });
+    const cards = [...container.children];
+    cards.forEach((card, idx) => {
+      const upBtn = card.querySelector('[data-move-up]');
+      const downBtn = card.querySelector('[data-move-down]');
+      if (upBtn) upBtn.disabled = idx === 0;
+      if (downBtn) downBtn.disabled = idx === cards.length - 1;
+    });
+  }
+
+  document.getElementById('home-cards').addEventListener('click', (e) => {
+    const upBtn = e.target.closest('[data-move-up]');
+    const downBtn = e.target.closest('[data-move-down]');
+    const key = upBtn ? upBtn.dataset.moveUp : downBtn ? downBtn.dataset.moveDown : null;
+    if (!key) return;
+    const idx = state.homeCardOrder.indexOf(key);
+    if (idx === -1) return;
+    if (upBtn && idx > 0) {
+      [state.homeCardOrder[idx - 1], state.homeCardOrder[idx]] = [state.homeCardOrder[idx], state.homeCardOrder[idx - 1]];
+    } else if (downBtn && idx < state.homeCardOrder.length - 1) {
+      [state.homeCardOrder[idx + 1], state.homeCardOrder[idx]] = [state.homeCardOrder[idx], state.homeCardOrder[idx + 1]];
+    } else {
+      return;
+    }
+    save();
+    applyHomeCardOrder();
+  });
 
   // ---------- Memo (メモ) ----------
   const memoForm = document.getElementById('memo-form');

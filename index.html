@@ -42,84 +42,120 @@
         </div>
       </div>
 
-      <div class="card">
-        <div class="card-header">
-          <h2>💭 最近のメモ</h2>
-          <button class="link-btn" data-goto="memo">すべて見る</button>
+      <div id="home-cards">
+        <div class="card" data-card-key="memo">
+          <div class="card-header">
+            <h2>💭 最近のメモ</h2>
+            <div class="home-card-actions">
+              <button class="link-btn" data-goto="memo">すべて見る</button>
+              <button type="button" class="reorder-btn" data-move-up="memo" aria-label="上に移動">▲</button>
+              <button type="button" class="reorder-btn" data-move-down="memo" aria-label="下に移動">▼</button>
+            </div>
+          </div>
+          <ul class="mini-list" id="home-recent-memo">
+            <li class="empty-hint">まだメモがありません</li>
+          </ul>
         </div>
-        <ul class="mini-list" id="home-recent-memo">
-          <li class="empty-hint">まだメモがありません</li>
-        </ul>
-      </div>
 
-      <div class="card">
-        <div class="card-header">
-          <h2>📝 最近の記録</h2>
-          <button class="link-btn" data-goto="log">すべて見る</button>
+        <div class="card" data-card-key="records">
+          <div class="card-header">
+            <h2>📝 最近の記録</h2>
+            <div class="home-card-actions">
+              <button class="link-btn" data-goto="log">すべて見る</button>
+              <button type="button" class="reorder-btn" data-move-up="records" aria-label="上に移動">▲</button>
+              <button type="button" class="reorder-btn" data-move-down="records" aria-label="下に移動">▼</button>
+            </div>
+          </div>
+          <ul class="mini-list" id="home-recent-records">
+            <li class="empty-hint">まだ記録がありません</li>
+          </ul>
         </div>
-        <ul class="mini-list" id="home-recent-records">
-          <li class="empty-hint">まだ記録がありません</li>
-        </ul>
-      </div>
 
-      <div class="card">
-        <div class="card-header">
-          <h2>🌱 習慣</h2>
-          <button class="link-btn" data-goto="habit">すべて見る</button>
+        <div class="card" data-card-key="habit">
+          <div class="card-header">
+            <h2>🌱 習慣</h2>
+            <div class="home-card-actions">
+              <button class="link-btn" data-goto="habit">すべて見る</button>
+              <button type="button" class="reorder-btn" data-move-up="habit" aria-label="上に移動">▲</button>
+              <button type="button" class="reorder-btn" data-move-down="habit" aria-label="下に移動">▼</button>
+            </div>
+          </div>
+          <ul class="mini-list" id="home-recent-habit">
+            <li class="empty-hint">習慣が登録されていません</li>
+          </ul>
         </div>
-        <ul class="mini-list" id="home-recent-habit">
-          <li class="empty-hint">習慣が登録されていません</li>
-        </ul>
-      </div>
 
-      <div class="card">
-        <div class="card-header">
-          <h2>✅ やることリスト</h2>
-          <button class="link-btn" data-goto="todo">すべて見る</button>
+        <div class="card" data-card-key="todo">
+          <div class="card-header">
+            <h2>✅ やることリスト</h2>
+            <div class="home-card-actions">
+              <button class="link-btn" data-goto="todo">すべて見る</button>
+              <button type="button" class="reorder-btn" data-move-up="todo" aria-label="上に移動">▲</button>
+              <button type="button" class="reorder-btn" data-move-down="todo" aria-label="下に移動">▼</button>
+            </div>
+          </div>
+          <ul class="mini-list" id="home-recent-todo">
+            <li class="empty-hint">タスクはありません</li>
+          </ul>
         </div>
-        <ul class="mini-list" id="home-recent-todo">
-          <li class="empty-hint">タスクはありません</li>
-        </ul>
-      </div>
 
-      <div class="card">
-        <div class="card-header">
-          <h2>⭐ やりたいことリスト</h2>
-          <button class="link-btn" data-goto="todo">すべて見る</button>
+        <div class="card" data-card-key="wish">
+          <div class="card-header">
+            <h2>⭐ やりたいことリスト</h2>
+            <div class="home-card-actions">
+              <button class="link-btn" data-goto="todo">すべて見る</button>
+              <button type="button" class="reorder-btn" data-move-up="wish" aria-label="上に移動">▲</button>
+              <button type="button" class="reorder-btn" data-move-down="wish" aria-label="下に移動">▼</button>
+            </div>
+          </div>
+          <ul class="mini-list" id="home-recent-wish">
+            <li class="empty-hint">やりたいことはまだ登録されていません</li>
+          </ul>
         </div>
-        <ul class="mini-list" id="home-recent-wish">
-          <li class="empty-hint">やりたいことはまだ登録されていません</li>
-        </ul>
-      </div>
 
-      <div class="card">
-        <div class="card-header">
-          <h2>🛒 買い物リスト</h2>
-          <button class="link-btn" data-goto="shopping">すべて見る</button>
+        <div class="card" data-card-key="shopping">
+          <div class="card-header">
+            <h2>🛒 買い物リスト</h2>
+            <div class="home-card-actions">
+              <button class="link-btn" data-goto="shopping">すべて見る</button>
+              <button type="button" class="reorder-btn" data-move-up="shopping" aria-label="上に移動">▲</button>
+              <button type="button" class="reorder-btn" data-move-down="shopping" aria-label="下に移動">▼</button>
+            </div>
+          </div>
+          <ul class="mini-list" id="home-recent-shopping">
+            <li class="empty-hint">リストは空です</li>
+          </ul>
         </div>
-        <ul class="mini-list" id="home-recent-shopping">
-          <li class="empty-hint">リストは空です</li>
-        </ul>
-      </div>
 
-      <div class="card">
-        <div class="card-header">
-          <h2>🛍️ 買いたいものリスト</h2>
-          <button class="link-btn" data-goto="shopping">すべて見る</button>
+        <div class="card" data-card-key="buyWish">
+          <div class="card-header">
+            <h2>🛍️ 買いたいものリスト</h2>
+            <div class="home-card-actions">
+              <button class="link-btn" data-goto="shopping">すべて見る</button>
+              <button type="button" class="reorder-btn" data-move-up="buyWish" aria-label="上に移動">▲</button>
+              <button type="button" class="reorder-btn" data-move-down="buyWish" aria-label="下に移動">▼</button>
+            </div>
+          </div>
+          <ul class="mini-list" id="home-recent-buy-wish">
+            <li class="empty-hint">買いたいものはまだ登録されていません</li>
+          </ul>
         </div>
-        <ul class="mini-list" id="home-recent-buy-wish">
-          <li class="empty-hint">買いたいものはまだ登録されていません</li>
-        </ul>
-      </div>
 
-      <div class="card">
-        <div class="card-header"><h2>💾 データのバックアップ</h2></div>
-        <p class="backup-hint">機種変更やブラウザの変更前に、データをファイルへ書き出しておくと安心です。</p>
-        <div class="backup-actions">
-          <button type="button" class="primary-btn small" id="export-btn">📤 エクスポート</button>
-          <button type="button" class="primary-btn small secondary-btn" id="import-btn">📥 インポート</button>
+        <div class="card" data-card-key="backup">
+          <div class="card-header">
+            <h2>💾 データのバックアップ</h2>
+            <div class="home-card-actions">
+              <button type="button" class="reorder-btn" data-move-up="backup" aria-label="上に移動">▲</button>
+              <button type="button" class="reorder-btn" data-move-down="backup" aria-label="下に移動">▼</button>
+            </div>
+          </div>
+          <p class="backup-hint">機種変更やブラウザの変更前に、データをファイルへ書き出しておくと安心です。</p>
+          <div class="backup-actions">
+            <button type="button" class="primary-btn small" id="export-btn">📤 エクスポート</button>
+            <button type="button" class="primary-btn small secondary-btn" id="import-btn">📥 インポート</button>
+          </div>
+          <input type="file" id="import-file-input" accept="application/json" style="display:none" />
         </div>
-        <input type="file" id="import-file-input" accept="application/json" style="display:none" />
       </div>
     </section>
 
