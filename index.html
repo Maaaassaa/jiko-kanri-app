@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
 <title>自己管理</title>
-<meta name="description" content="今日の成果・習慣・やることリスト・お金・買い物リストをまとめて管理する自己管理アプリ" />
+<meta name="description" content="今日の成果・習慣・やることリスト・お金・買い物リスト・持ち物をまとめて管理する自己管理アプリ" />
 <meta name="theme-color" content="#4f46e5" media="(prefers-color-scheme: light)" />
 <meta name="theme-color" content="#0f172a" media="(prefers-color-scheme: dark)" />
 <link rel="manifest" href="manifest.json" />
@@ -276,6 +276,57 @@
       </div>
     </section>
 
+    <!-- 持ち物 -->
+    <section id="view-belongings" class="view">
+      <form class="card form-card" id="belonging-form">
+        <label class="field-label">写真（任意）</label>
+        <label for="belonging-photo-input" class="belonging-photo-picker" id="belonging-photo-picker">
+          <img id="belonging-photo-preview" class="belonging-photo-preview" style="display:none;" alt="" />
+          <span id="belonging-photo-placeholder-text" class="belonging-photo-placeholder-text">📷 タップして写真を選択</span>
+        </label>
+        <input type="file" id="belonging-photo-input" accept="image/*" style="display:none" />
+        <p class="belonging-photo-hint">写真は自動で圧縮され、端末内にのみ保存されます。</p>
+
+        <label class="field-label" for="belonging-name">商品名</label>
+        <input type="text" id="belonging-name" placeholder="例）歯磨き粉" autocomplete="off" required />
+
+        <label class="field-label" for="belonging-category">カテゴリ</label>
+        <select id="belonging-category">
+          <option value="daily">🧴 日用品</option>
+          <option value="electronics">💻 電化製品</option>
+          <option value="other">📦 その他</option>
+        </select>
+
+        <label class="field-label" for="belonging-maker">メーカー（任意）</label>
+        <input type="text" id="belonging-maker" placeholder="例）花王" autocomplete="off" />
+
+        <label class="field-label" for="belonging-price">価格（任意）</label>
+        <input type="number" id="belonging-price" inputmode="numeric" min="0" placeholder="0" />
+
+        <label class="field-label" for="belonging-place">購入場所（任意）</label>
+        <input type="text" id="belonging-place" placeholder="例）Amazon／ヨドバシカメラ" autocomplete="off" />
+
+        <label class="field-label" for="belonging-date">購入日（任意）</label>
+        <input type="date" id="belonging-date" />
+
+        <label class="field-label" for="belonging-notes">メモ（任意）</label>
+        <input type="text" id="belonging-notes" placeholder="例）詰め替え用は緑のパッケージ" autocomplete="off" />
+
+        <button type="submit" class="primary-btn">追加する</button>
+      </form>
+
+      <div class="chip-row belonging-filter-row" id="belonging-filter-chips">
+        <button type="button" class="chip active" data-filter="all">すべて</button>
+        <button type="button" class="chip" data-filter="daily">🧴 日用品</button>
+        <button type="button" class="chip" data-filter="electronics">💻 電化製品</button>
+        <button type="button" class="chip" data-filter="other">📦 その他</button>
+      </div>
+
+      <div id="belonging-list">
+        <p class="empty-hint">まだ持ち物が登録されていません</p>
+      </div>
+    </section>
+
   </main>
 
   <nav class="tabbar">
@@ -285,6 +336,7 @@
     <button class="tab" data-view="todo"><span class="icon">✅</span><span>やること</span></button>
     <button class="tab" data-view="money"><span class="icon">💰</span><span>お金</span></button>
     <button class="tab" data-view="shopping"><span class="icon">🛒</span><span>買い物</span></button>
+    <button class="tab" data-view="belongings"><span class="icon">📦</span><span>持ち物</span></button>
   </nav>
 
 </div>

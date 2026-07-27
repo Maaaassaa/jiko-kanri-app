@@ -29,6 +29,7 @@
       todos: Array.isArray(parsed.todos) ? parsed.todos : [],
       habits: Array.isArray(parsed.habits) ? parsed.habits : [],
       wishes: Array.isArray(parsed.wishes) ? parsed.wishes : [],
+      belongings: Array.isArray(parsed.belongings) ? parsed.belongings : [],
     };
   }
 
@@ -46,7 +47,12 @@
   const state = loadState();
 
   function save() {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    } catch (e) {
+      console.error('failed to save state', e);
+      alert('保存に失敗しました。写真の容量が大きい場合、端末のストレージ上限に達している可能性があります。');
+    }
   }
 
   function uid() {
@@ -99,6 +105,37 @@
     return s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   }
 
+  function resizeImageToDataUrl(file, maxDim, quality) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const img = new Image();
+        img.onload = () => {
+          let { width, height } = img;
+          if (width > maxDim || height > maxDim) {
+            if (width > height) {
+              height = Math.round((height * maxDim) / width);
+              width = maxDim;
+            } else {
+              width = Math.round((width * maxDim) / height);
+              height = maxDim;
+            }
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL('image/jpeg', quality));
+        };
+        img.onerror = () => reject(new Error('image load failed'));
+        img.src = reader.result;
+      };
+      reader.onerror = () => reject(new Error('file read failed'));
+      reader.readAsDataURL(file);
+    });
+  }
+
   const NOTE_COLORS = ['note-yellow', 'note-pink', 'note-blue', 'note-green', 'note-orange', 'note-purple'];
   const NOTE_ROTATIONS = [-3, -2, -1.5, 1.5, 2, 3];
   function noteStyle(id) {
@@ -111,8 +148,16 @@
   }
 
   // ---------- View switching ----------
-  const VIEWS = ['home', 'log', 'habit', 'todo', 'money', 'shopping'];
-  const PAGE_TITLES = { home: 'ホーム', log: '記録', habit: '習慣', todo: 'やることリスト', money: 'お金', shopping: '買い物リスト' };
+  const VIEWS = ['home', 'log', 'habit', 'todo', 'money', 'shopping', 'belongings'];
+  const PAGE_TITLES = {
+    home: 'ホーム',
+    log: '記録',
+    habit: '習慣',
+    todo: 'やることリスト',
+    money: 'お金',
+    shopping: '買い物リスト',
+    belongings: '持ち物',
+  };
 
   function switchView(name) {
     VIEWS.forEach((v) => {
@@ -129,6 +174,7 @@
     if (name === 'todo') { renderTodo(); renderWish(); }
     if (name === 'money') renderMoney();
     if (name === 'shopping') renderShopping();
+    if (name === 'belongings') renderBelongings();
   }
 
   document.querySelectorAll('.tab').forEach((btn) => {
@@ -1116,6 +1162,135 @@
     e.target.value = '';
   });
 
+  // ---------- Belongings (持ち物) ----------
+  const BELONGING_CATEGORIES = {
+    daily: { icon: '🧴', label: '日用品' },
+    electronics: { icon: '💻', label: '電化製品' },
+    other: { icon: '📦', label: 'その他' },
+  };
+  let belongingFilter = 'all';
+  let pendingBelongingPhoto = null;
+
+  const belongingForm = document.getElementById('belonging-form');
+  const belongingNameInput = document.getElementById('belonging-name');
+  const belongingCategorySelect = document.getElementById('belonging-category');
+  const belongingMakerInput = document.getElementById('belonging-maker');
+  const belongingPriceInput = document.getElementById('belonging-price');
+  const belongingPlaceInput = document.getElementById('belonging-place');
+  const belongingDateInput = document.getElementById('belonging-date');
+  const belongingNotesInput = document.getElementById('belonging-notes');
+  const belongingPhotoInput = document.getElementById('belonging-photo-input');
+  const belongingPhotoPreview = document.getElementById('belonging-photo-preview');
+  const belongingPhotoPlaceholderText = document.getElementById('belonging-photo-placeholder-text');
+
+  belongingPhotoInput.addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    try {
+      pendingBelongingPhoto = await resizeImageToDataUrl(file, 800, 0.7);
+      belongingPhotoPreview.src = pendingBelongingPhoto;
+      belongingPhotoPreview.style.display = '';
+      belongingPhotoPlaceholderText.style.display = 'none';
+    } catch (err) {
+      console.error('failed to process photo', err);
+      alert('写真の読み込みに失敗しました。');
+    }
+  });
+
+  function resetBelongingForm() {
+    belongingForm.reset();
+    pendingBelongingPhoto = null;
+    belongingPhotoPreview.src = '';
+    belongingPhotoPreview.style.display = 'none';
+    belongingPhotoPlaceholderText.style.display = '';
+  }
+
+  belongingForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const name = belongingNameInput.value.trim();
+    if (!name) return;
+    const priceRaw = belongingPriceInput.value.trim();
+    const price = priceRaw && Number.isFinite(parseFloat(priceRaw)) ? parseFloat(priceRaw) : null;
+    state.belongings.push({
+      id: uid(),
+      name,
+      category: belongingCategorySelect.value,
+      maker: belongingMakerInput.value.trim(),
+      price,
+      place: belongingPlaceInput.value.trim(),
+      purchaseDate: belongingDateInput.value || null,
+      notes: belongingNotesInput.value.trim(),
+      photo: pendingBelongingPhoto,
+      createdAt: Date.now(),
+    });
+    save();
+    resetBelongingForm();
+    renderBelongings();
+  });
+
+  document.getElementById('belonging-filter-chips').addEventListener('click', (e) => {
+    const chip = e.target.closest('[data-filter]');
+    if (!chip) return;
+    belongingFilter = chip.dataset.filter;
+    document.querySelectorAll('#belonging-filter-chips .chip').forEach((c) => c.classList.toggle('active', c === chip));
+    renderBelongings();
+  });
+
+  document.getElementById('belonging-list').addEventListener('click', (e) => {
+    const delBtn = e.target.closest('[data-del-belonging]');
+    if (!delBtn) return;
+    if (!confirm('この持ち物を削除しますか？')) return;
+    const idx = state.belongings.findIndex((b) => b.id === delBtn.dataset.delBelonging);
+    if (idx !== -1) state.belongings.splice(idx, 1);
+    save();
+    renderBelongings();
+  });
+
+  function renderBelongings() {
+    const listEl = document.getElementById('belonging-list');
+    listEl.innerHTML = '';
+    const filtered =
+      belongingFilter === 'all' ? state.belongings : state.belongings.filter((b) => b.category === belongingFilter);
+    if (filtered.length === 0) {
+      listEl.innerHTML = '<p class="empty-hint">まだ持ち物が登録されていません</p>';
+      return;
+    }
+    const sorted = [...filtered].sort((a, b) => b.createdAt - a.createdAt);
+    sorted.forEach((b) => {
+      const meta = BELONGING_CATEGORIES[b.category] || BELONGING_CATEGORIES.other;
+      const photoHtml = b.photo
+        ? `<img class="belonging-photo" src="${b.photo}" alt="">`
+        : `<div class="belonging-photo-placeholder">${meta.icon}</div>`;
+      const metaLine1 = [
+        b.maker && `🏷️ ${escapeHtml(b.maker)}`,
+        Number.isFinite(b.price) && `💴 ${formatYen(b.price)}`,
+      ]
+        .filter(Boolean)
+        .join('　');
+      const metaLine2 = [b.place && `🏬 ${escapeHtml(b.place)}`, b.purchaseDate && `📅 ${formatDateLabel(b.purchaseDate)}`]
+        .filter(Boolean)
+        .join('　');
+
+      const card = document.createElement('div');
+      card.className = 'card belonging-card';
+      card.innerHTML = `
+        <div class="belonging-card-top">
+          ${photoHtml}
+          <div class="belonging-info">
+            <div class="belonging-name-row">
+              <span class="belonging-name">${escapeHtml(b.name)}</span>
+              <button class="icon-btn" data-del-belonging="${b.id}">✕</button>
+            </div>
+            ${metaLine1 ? `<div class="belonging-meta">${metaLine1}</div>` : ''}
+            ${metaLine2 ? `<div class="belonging-meta">${metaLine2}</div>` : ''}
+          </div>
+        </div>
+        ${b.notes ? `<p class="belonging-notes">${escapeHtml(b.notes)}</p>` : ''}
+      `;
+      listEl.appendChild(card);
+    });
+  }
+
   // ---------- Init ----------
   function updateTodayBadge() {
     const d = new Date();
@@ -1136,6 +1311,7 @@
     renderWish();
     renderMoney();
     renderShopping();
+    renderBelongings();
 
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('sw.js').catch(() => {});
