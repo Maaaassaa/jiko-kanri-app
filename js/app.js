@@ -29,6 +29,7 @@
       todos: Array.isArray(parsed.todos) ? parsed.todos : [],
       habits: Array.isArray(parsed.habits) ? parsed.habits : [],
       wishes: Array.isArray(parsed.wishes) ? parsed.wishes : [],
+      buyWishes: Array.isArray(parsed.buyWishes) ? parsed.buyWishes : [],
       belongings: Array.isArray(parsed.belongings) ? parsed.belongings : [],
       belongingCategories: Array.isArray(parsed.belongingCategories) ? parsed.belongingCategories : [],
     };
@@ -174,7 +175,7 @@
     if (name === 'habit') renderHabit();
     if (name === 'todo') { renderTodo(); renderWish(); }
     if (name === 'money') renderMoney();
-    if (name === 'shopping') renderShopping();
+    if (name === 'shopping') { renderShopping(); renderBuyWish(); }
     if (name === 'belongings') renderBelongings();
   }
 
@@ -222,6 +223,9 @@
 
     const wishLeft = state.wishes.filter((w) => !w.checked).length;
     document.getElementById('stat-wish-left').innerHTML = `${wishLeft}<small>件</small>`;
+
+    const buyWishLeft = state.buyWishes.filter((w) => !w.checked).length;
+    document.getElementById('stat-buy-wish-left').innerHTML = `${buyWishLeft}<small>件</small>`;
 
     document.getElementById('greeting-text').textContent = greetingByHour();
 
@@ -295,6 +299,22 @@
         const li = document.createElement('li');
         li.innerHTML = `<span>${escapeHtml(i.name)}</span>`;
         shopEl.appendChild(li);
+      });
+    }
+
+    const buyWishEl = document.getElementById('home-recent-buy-wish');
+    buyWishEl.innerHTML = '';
+    const pendingBuyWishes = [...state.buyWishes]
+      .filter((w) => !w.checked)
+      .sort((a, b) => b.createdAt - a.createdAt)
+      .slice(0, 5);
+    if (pendingBuyWishes.length === 0) {
+      buyWishEl.innerHTML = '<li class="empty-hint">買いたいものはまだ登録されていません</li>';
+    } else {
+      pendingBuyWishes.forEach((w) => {
+        const li = document.createElement('li');
+        li.innerHTML = `<span>${escapeHtml(truncate(w.text, 28))}</span><span class="muted">${formatDateLabel(w.date)}</span>`;
+        buyWishEl.appendChild(li);
       });
     }
   }
@@ -449,6 +469,9 @@
   const habitNameInput = document.getElementById('habit-name');
   const habitPurposeInput = document.getElementById('habit-purpose');
   const habitTimeInput = document.getElementById('habit-time');
+  const habitFrequencyInput = document.getElementById('habit-frequency');
+  const habitIntervalRow = document.getElementById('habit-interval-row');
+  const habitIntervalMonthsInput = document.getElementById('habit-interval-months');
   const HABIT_MASTERY_DAYS = 21;
   const TIME_OF_DAY_META = {
     anytime: { icon: '🕐', label: 'いつでも', heading: '🕐 いつでもの習慣' },
@@ -465,15 +488,35 @@
     });
   });
 
+  document.querySelectorAll('#habit-frequency-toggle .seg-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#habit-frequency-toggle .seg-btn').forEach((b) => b.classList.remove('active'));
+      btn.classList.add('active');
+      habitFrequencyInput.value = btn.dataset.freq;
+      habitIntervalRow.style.display = btn.dataset.freq === 'custom' ? '' : 'none';
+    });
+  });
+
+  function habitFrequencyLabel(frequency, intervalMonths) {
+    if (frequency === 'monthly') return '🗓️ 毎月';
+    if (frequency === 'custom') return `🗓️ ${intervalMonths || 3}ヶ月ごと`;
+    return '🗓️ 毎日';
+  }
+
   habitForm.addEventListener('submit', (e) => {
     e.preventDefault();
     const name = habitNameInput.value.trim();
     if (!name) return;
+    const frequency = habitFrequencyInput.value;
+    const intervalMonths =
+      frequency === 'monthly' ? 1 : frequency === 'custom' ? parseInt(habitIntervalMonthsInput.value, 10) || 3 : null;
     state.habits.push({
       id: uid(),
       name,
       purpose: habitPurposeInput.value.trim(),
       timeOfDay: habitTimeInput.value,
+      frequency,
+      intervalMonths,
       checkins: [],
       notes: [],
       mastered: false,
@@ -486,6 +529,12 @@
     habitTimeInput.value = 'anytime';
     document.querySelectorAll('#habit-time-toggle .seg-btn').forEach((b) => {
       b.classList.toggle('active', b.dataset.time === 'anytime');
+    });
+    habitFrequencyInput.value = 'daily';
+    habitIntervalMonthsInput.value = '3';
+    habitIntervalRow.style.display = 'none';
+    document.querySelectorAll('#habit-frequency-toggle .seg-btn').forEach((b) => {
+      b.classList.toggle('active', b.dataset.freq === 'daily');
     });
     renderHabit();
   });
@@ -514,6 +563,57 @@
       if (current > longest) longest = current;
     }
     return longest;
+  }
+
+  function monthIndex(dateStr) {
+    const [y, m] = dateStr.split('-').map(Number);
+    return y * 12 + (m - 1);
+  }
+
+  function computeMonthlyStreak(checkins, intervalMonths) {
+    if (checkins.length === 0) return 0;
+    const months = [...new Set(checkins.map(monthIndex))].sort((a, b) => b - a);
+    const currentMonth = monthIndex(dateStrOffset(0));
+    if (currentMonth - months[0] > intervalMonths) return 0;
+    let streak = 1;
+    for (let i = 1; i < months.length; i++) {
+      if (months[i - 1] - months[i] <= intervalMonths) streak++;
+      else break;
+    }
+    return streak;
+  }
+
+  function computeMonthlyLongestStreak(checkins, intervalMonths) {
+    if (checkins.length === 0) return 0;
+    const months = [...new Set(checkins.map(monthIndex))].sort((a, b) => a - b);
+    let longest = 1;
+    let current = 1;
+    for (let i = 1; i < months.length; i++) {
+      if (months[i] - months[i - 1] <= intervalMonths) current++;
+      else current = 1;
+      if (current > longest) longest = current;
+    }
+    return longest;
+  }
+
+  function getHabitStreakInfo(habit) {
+    const frequency = habit.frequency || 'daily';
+    if (frequency === 'daily') {
+      return { streak: computeStreak(new Set(habit.checkins)), longest: computeLongestStreak(habit.checkins), unit: '日' };
+    }
+    const intervalMonths = frequency === 'monthly' ? 1 : habit.intervalMonths || 3;
+    return {
+      streak: computeMonthlyStreak(habit.checkins, intervalMonths),
+      longest: computeMonthlyLongestStreak(habit.checkins, intervalMonths),
+      unit: '回',
+    };
+  }
+
+  function isHabitCheckedInCurrentPeriod(habit) {
+    const today = dateStrOffset(0);
+    if ((habit.frequency || 'daily') === 'daily') return habit.checkins.includes(today);
+    const currentMonth = monthIndex(today);
+    return habit.checkins.some((d) => monthIndex(d) === currentMonth);
   }
 
   document.getElementById('habit-list').addEventListener('click', (e) => {
@@ -566,23 +666,33 @@
       const habit = state.habits.find((h) => h.id === checkBtn.dataset.toggleHabit);
       if (habit) {
         const today = dateStrOffset(0);
-        const idx = habit.checkins.indexOf(today);
-        if (idx === -1) {
-          habit.checkins.push(today);
-          const streak = computeStreak(new Set(habit.checkins));
-          if (streak >= HABIT_MASTERY_DAYS && !habit.mastered) {
-            habit.mastered = true;
-            habit.masteredAt = today;
-            state.records.push({
-              id: uid(),
-              date: today,
-              time: nowTimeStr(),
-              text: `🏆「${habit.name}」が${HABIT_MASTERY_DAYS}日間続き、習慣になりました！`,
-              createdAt: Date.now(),
-            });
+        const frequency = habit.frequency || 'daily';
+        if (frequency === 'daily') {
+          const idx = habit.checkins.indexOf(today);
+          if (idx === -1) {
+            habit.checkins.push(today);
+            const streak = computeStreak(new Set(habit.checkins));
+            if (streak >= HABIT_MASTERY_DAYS && !habit.mastered) {
+              habit.mastered = true;
+              habit.masteredAt = today;
+              state.records.push({
+                id: uid(),
+                date: today,
+                time: nowTimeStr(),
+                text: `🏆「${habit.name}」が${HABIT_MASTERY_DAYS}日間続き、習慣になりました！`,
+                createdAt: Date.now(),
+              });
+            }
+          } else {
+            habit.checkins.splice(idx, 1);
           }
         } else {
-          habit.checkins.splice(idx, 1);
+          const currentMonth = monthIndex(today);
+          if (isHabitCheckedInCurrentPeriod(habit)) {
+            habit.checkins = habit.checkins.filter((d) => monthIndex(d) !== currentMonth);
+          } else {
+            habit.checkins.push(today);
+          }
         }
       }
       save();
@@ -629,12 +739,14 @@
   }
 
   function buildHabitCardHtml(habit) {
-    const today = dateStrOffset(0);
     const checkinSet = new Set(habit.checkins);
-    const streak = computeStreak(checkinSet);
-    const longest = computeLongestStreak(habit.checkins);
-    const checkedToday = checkinSet.has(today);
+    const frequency = habit.frequency || 'daily';
+    const { streak, longest, unit } = getHabitStreakInfo(habit);
+    const checkedNow = isHabitCheckedInCurrentPeriod(habit);
     const timeMeta = TIME_OF_DAY_META[habit.timeOfDay || 'anytime'];
+    const freqLabel = habitFrequencyLabel(frequency, habit.intervalMonths);
+    const checkLabel = frequency === 'daily' ? '今日やった' : '今月やった';
+    const checkedLabel = frequency === 'daily' ? '✓ 今日達成' : '✓ 今月達成';
 
     const purposeHtml = habit.purpose
       ? `<p class="habit-purpose">🎯 ${escapeHtml(habit.purpose)} <button type="button" class="habit-edit-link" data-edit-purpose="${habit.id}">編集</button></p>`
@@ -661,18 +773,21 @@
     return `
       <div class="habit-card-header">
         <span class="habit-name">${escapeHtml(habit.name)}</span>
-        <button type="button" class="habit-time-badge" data-cycle-time="${habit.id}">${timeMeta.icon} ${timeMeta.label}</button>
         <button class="icon-btn" data-del-habit="${habit.id}">✕</button>
+      </div>
+      <div class="habit-badge-row">
+        <button type="button" class="habit-time-badge" data-cycle-time="${habit.id}">${timeMeta.icon} ${timeMeta.label}</button>
+        <span class="habit-freq-badge">${freqLabel}</span>
       </div>
       ${purposeHtml}
       ${masteredHtml}
       <div class="habit-streak-row">
-        <span class="habit-streak">🔥 <strong>${streak}</strong>日連続</span>
-        <span class="habit-best">最長 ${longest}日</span>
+        <span class="habit-streak">🔥 <strong>${streak}</strong>${unit}連続</span>
+        <span class="habit-best">最長 ${longest}${unit}</span>
       </div>
       <div class="habit-calendar">${buildHabitCalendarHtml(checkinSet)}</div>
-      <button type="button" class="habit-check-btn${checkedToday ? ' checked' : ''}" data-toggle-habit="${habit.id}">
-        ${checkedToday ? '✓ 今日達成' : '今日やった'}
+      <button type="button" class="habit-check-btn${checkedNow ? ' checked' : ''}" data-toggle-habit="${habit.id}">
+        ${checkedNow ? checkedLabel : checkLabel}
       </button>
 
       <div class="habit-notes-section">
@@ -876,6 +991,83 @@
       li.dataset.toggleWish = w.id;
       li.innerHTML = `
         <button class="note-del" data-del-wish="${w.id}">✕</button>
+        <p class="note-text">${escapeHtml(w.text)}</p>
+        <span class="wish-date">${formatDateLabel(w.date)}</span>
+      `;
+      listEl.appendChild(li);
+    });
+  }
+
+  // ---------- Buy Wish (買いたいものリスト) ----------
+  const buyWishForm = document.getElementById('buy-wish-form');
+  const buyWishTextInput = document.getElementById('buy-wish-text');
+
+  buyWishForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const text = buyWishTextInput.value.trim();
+    if (!text) return;
+    state.buyWishes.push({ id: uid(), text, date: dateStrOffset(0), checked: false, createdAt: Date.now() });
+    save();
+    buyWishTextInput.value = '';
+    renderBuyWish();
+  });
+
+  document.getElementById('buy-wish-list').addEventListener('click', (e) => {
+    const delBtn = e.target.closest('[data-del-buy-wish]');
+    if (delBtn) {
+      const idx = state.buyWishes.findIndex((w) => w.id === delBtn.dataset.delBuyWish);
+      if (idx !== -1) state.buyWishes.splice(idx, 1);
+      save();
+      renderBuyWish();
+      return;
+    }
+    const checkBtn = e.target.closest('[data-toggle-buy-wish]');
+    if (checkBtn) {
+      const wish = state.buyWishes.find((w) => w.id === checkBtn.dataset.toggleBuyWish);
+      if (wish) wish.checked = !wish.checked;
+      save();
+      renderBuyWish();
+    }
+  });
+
+  document.getElementById('clear-done-buy-wish-btn').addEventListener('click', () => {
+    const doneWishes = state.buyWishes.filter((w) => w.checked);
+    if (doneWishes.length === 0) return;
+    const today = todayStr();
+    const time = nowTimeStr();
+    doneWishes.forEach((w) => {
+      state.records.push({
+        id: uid(),
+        date: today,
+        time,
+        text: `🛍️ ${w.text}を購入しました！`,
+        createdAt: Date.now(),
+      });
+    });
+    state.buyWishes = state.buyWishes.filter((w) => !w.checked);
+    save();
+    renderBuyWish();
+  });
+
+  function renderBuyWish() {
+    const listEl = document.getElementById('buy-wish-list');
+    listEl.innerHTML = '';
+    if (state.buyWishes.length === 0) {
+      listEl.innerHTML = '<li class="empty-hint">買いたいものはまだ登録されていません</li>';
+      return;
+    }
+    const sorted = [...state.buyWishes].sort((a, b) => {
+      if (a.checked !== b.checked) return a.checked ? 1 : -1;
+      return b.createdAt - a.createdAt;
+    });
+    sorted.forEach((w) => {
+      const { colorClass, rot } = noteStyle(w.id);
+      const li = document.createElement('li');
+      li.className = `sticky-note todo-note ${colorClass}` + (w.checked ? ' checked' : '');
+      li.style.setProperty('--rot', `${rot}deg`);
+      li.dataset.toggleBuyWish = w.id;
+      li.innerHTML = `
+        <button class="note-del" data-del-buy-wish="${w.id}">✕</button>
         <p class="note-text">${escapeHtml(w.text)}</p>
         <span class="wish-date">${formatDateLabel(w.date)}</span>
       `;
@@ -1379,6 +1571,7 @@
     renderWish();
     renderMoney();
     renderShopping();
+    renderBuyWish();
     populateBelongingCategorySelect(DEFAULT_BELONGING_CATEGORIES[0].id);
     renderBelongings();
 

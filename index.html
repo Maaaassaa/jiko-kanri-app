@@ -60,6 +60,10 @@
           <span class="stat-label">やりたいこと</span>
           <span class="stat-value" id="stat-wish-left">0<small>件</small></span>
         </div>
+        <div class="stat-card">
+          <span class="stat-label">買いたいもの</span>
+          <span class="stat-value" id="stat-buy-wish-left">0<small>件</small></span>
+        </div>
       </div>
 
       <div class="card">
@@ -109,6 +113,16 @@
         </div>
         <ul class="mini-list" id="home-recent-shopping">
           <li class="empty-hint">リストは空です</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h2>買いたいものリスト</h2>
+          <button class="link-btn" data-goto="shopping">すべて見る</button>
+        </div>
+        <ul class="mini-list" id="home-recent-buy-wish">
+          <li class="empty-hint">買いたいものはまだ登録されていません</li>
         </ul>
       </div>
 
@@ -165,6 +179,17 @@
           <button type="button" class="seg-btn" data-time="afternoon">🌇 午後</button>
         </div>
         <input type="hidden" id="habit-time" value="anytime" />
+        <label class="field-label">頻度</label>
+        <div class="segmented" id="habit-frequency-toggle">
+          <button type="button" class="seg-btn active" data-freq="daily">毎日</button>
+          <button type="button" class="seg-btn" data-freq="monthly">毎月</button>
+          <button type="button" class="seg-btn" data-freq="custom">数ヶ月ごと</button>
+        </div>
+        <input type="hidden" id="habit-frequency" value="daily" />
+        <div class="field-inline" id="habit-interval-row" style="display:none;">
+          <label class="field-label" for="habit-interval-months">何ヶ月ごと？</label>
+          <input type="number" id="habit-interval-months" min="1" max="24" value="3" />
+        </div>
         <button type="submit" class="primary-btn">追加する</button>
       </form>
 
@@ -272,6 +297,22 @@
         </div>
         <ul class="check-list grid-notes" id="shopping-list">
           <li class="empty-hint">リストは空です</li>
+        </ul>
+      </div>
+
+      <form class="form-card sticky-note compose-note note-purple" id="buy-wish-form">
+        <label class="field-label" for="buy-wish-text">買いたいものを追加</label>
+        <input type="text" id="buy-wish-text" placeholder="例）新しい鞄" autocomplete="off" required />
+        <button type="submit" class="primary-btn">追加する</button>
+      </form>
+
+      <div class="card">
+        <div class="card-header">
+          <h2>買いたいものリスト</h2>
+          <button class="link-btn" id="clear-done-buy-wish-btn">購入済みを削除</button>
+        </div>
+        <ul class="check-list" id="buy-wish-list">
+          <li class="empty-hint">買いたいものはまだ登録されていません</li>
         </ul>
       </div>
     </section>
