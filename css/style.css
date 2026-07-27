@@ -320,16 +320,37 @@ input:focus, select:focus, textarea:focus {
   flex-shrink: 0;
 }
 .habit-add-purpose { font-size: 0.82rem; margin-bottom: 10px; }
-.habit-mastered-badge {
-  display: inline-block;
+.mastered-showcase { margin-bottom: 18px; }
+.mastered-group-heading {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  margin: 10px 0 8px;
+}
+.mastered-group-heading:first-of-type { margin-top: 0; }
+.mastered-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+.mastered-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #fff3cd;
+  color: #92660a;
+  border: 1px solid #f0d78a;
+  border-radius: 999px;
+  padding: 6px 6px 6px 12px;
   font-size: 0.8rem;
   font-weight: 700;
-  color: #92660a;
-  background: #fff3cd;
-  padding: 4px 10px;
-  border-radius: 999px;
-  margin: 0 0 10px;
 }
+.mastered-chip-name { white-space: nowrap; }
+.mastered-chip-date { font-size: 0.68rem; opacity: 0.75; white-space: nowrap; }
+.mastered-chip .icon-btn { color: #92660a; padding: 0 2px; font-size: 0.85rem; }
+.mastered-chip .icon-btn:active { color: var(--danger); }
+
 .habit-mastery-btn {
   display: inline-block;
   background: #fff3cd;

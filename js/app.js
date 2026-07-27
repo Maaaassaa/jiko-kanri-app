@@ -218,8 +218,9 @@
     const todoLeft = state.todos.filter((t) => !t.checked).length;
     document.getElementById('stat-todo-left').innerHTML = `${todoLeft}<small>件</small>`;
 
-    const habitDoneToday = state.habits.filter((h) => h.checkins.includes(today)).length;
-    document.getElementById('stat-habit-today').innerHTML = `${habitDoneToday}<small>/${state.habits.length}</small>`;
+    const activeHabits = state.habits.filter((h) => !h.mastered);
+    const habitDoneToday = activeHabits.filter((h) => h.checkins.includes(today)).length;
+    document.getElementById('stat-habit-today').innerHTML = `${habitDoneToday}<small>/${activeHabits.length}</small>`;
 
     const wishLeft = state.wishes.filter((w) => !w.checked).length;
     document.getElementById('stat-wish-left').innerHTML = `${wishLeft}<small>件</small>`;
@@ -244,10 +245,10 @@
 
     const habitEl = document.getElementById('home-recent-habit');
     habitEl.innerHTML = '';
-    if (state.habits.length === 0) {
+    if (activeHabits.length === 0) {
       habitEl.innerHTML = '<li class="empty-hint">習慣が登録されていません</li>';
     } else {
-      state.habits.slice(0, 5).forEach((h) => {
+      activeHabits.slice(0, 5).forEach((h) => {
         const done = h.checkins.includes(today);
         const li = document.createElement('li');
         li.innerHTML = `<span>${escapeHtml(h.name)}</span><span class="muted">${done ? '✓ 達成' : '未達成'}</span>`;
@@ -662,9 +663,7 @@
       ? `<p class="habit-purpose">🎯 ${escapeHtml(habit.purpose)} <button type="button" class="habit-edit-link" data-edit-purpose="${habit.id}">編集</button></p>`
       : `<button type="button" class="habit-edit-link habit-add-purpose" data-edit-purpose="${habit.id}">+ 目的を追加</button>`;
 
-    const masteredHtml = habit.mastered
-      ? `<p class="habit-mastered-badge">🏅 習慣化達成（${formatDateLabel(habit.masteredAt)}）</p>`
-      : `<button type="button" class="habit-mastery-btn" data-mark-mastered="${habit.id}">🏅 身についた習慣にする</button>`;
+    const masteredHtml = `<button type="button" class="habit-mastery-btn" data-mark-mastered="${habit.id}">🏅 身についた習慣にする</button>`;
 
     const notes = [...(habit.notes || [])].sort((a, b) => b.createdAt - a.createdAt);
     const notesHtml = notes.length
@@ -708,6 +707,16 @@
     `;
   }
 
+  function buildMasteredChipHtml(habit) {
+    return `
+      <div class="mastered-chip">
+        <span class="mastered-chip-name">${escapeHtml(habit.name)}</span>
+        <span class="mastered-chip-date">${formatDateLabel(habit.masteredAt)}</span>
+        <button class="icon-btn" data-del-habit="${habit.id}">✕</button>
+      </div>
+    `;
+  }
+
   function renderHabit() {
     const listEl = document.getElementById('habit-list');
     listEl.innerHTML = '';
@@ -715,8 +724,26 @@
       listEl.innerHTML = '<p class="empty-hint">まだ習慣が登録されていません。身につけたいことを追加してみましょう。</p>';
       return;
     }
+
+    const masteredHabits = state.habits.filter((h) => h.mastered);
+    const activeHabits = state.habits.filter((h) => !h.mastered);
+
+    if (masteredHabits.length > 0) {
+      const showcase = document.createElement('div');
+      showcase.className = 'card mastered-showcase';
+      let showcaseHtml = `<div class="card-header"><h2>🏅 身についた習慣（${masteredHabits.length}）</h2></div>`;
+      TIME_OF_DAY_ORDER.forEach((groupKey) => {
+        const group = masteredHabits.filter((h) => (h.timeOfDay || 'anytime') === groupKey);
+        if (group.length === 0) return;
+        showcaseHtml += `<div class="mastered-group-heading">${TIME_OF_DAY_META[groupKey].icon} ${TIME_OF_DAY_META[groupKey].label}</div>`;
+        showcaseHtml += `<div class="mastered-chip-row">${group.map(buildMasteredChipHtml).join('')}</div>`;
+      });
+      showcase.innerHTML = showcaseHtml;
+      listEl.appendChild(showcase);
+    }
+
     TIME_OF_DAY_ORDER.forEach((groupKey) => {
-      const habitsInGroup = state.habits.filter((h) => (h.timeOfDay || 'anytime') === groupKey);
+      const habitsInGroup = activeHabits.filter((h) => (h.timeOfDay || 'anytime') === groupKey);
       if (habitsInGroup.length === 0) return;
       const heading = document.createElement('div');
       heading.className = 'habit-group-heading';
