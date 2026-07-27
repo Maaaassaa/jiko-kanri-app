@@ -262,14 +262,43 @@ input:focus, select:focus, textarea:focus {
 .mini-list .muted { color: var(--text-muted); font-size: 0.78rem; }
 
 /* Habit tracker */
+.habit-group-heading {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  margin: 18px 0 8px 2px;
+}
+.habit-group-heading:first-child { margin-top: 0; }
+
 .habit-card { padding: 14px 16px; }
 .habit-card-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 6px;
   margin-bottom: 8px;
 }
-.habit-name { font-weight: 700; font-size: 0.98rem; }
+.habit-name {
+  flex: 1;
+  min-width: 0;
+  font-weight: 700;
+  font-size: 0.98rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.habit-time-badge {
+  flex-shrink: 0;
+  border: none;
+  background: var(--surface-2);
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 4px 9px;
+  border-radius: 999px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.habit-time-badge:active { background: var(--border); }
 .habit-purpose {
   font-size: 0.82rem;
   color: var(--text-muted);
@@ -291,6 +320,16 @@ input:focus, select:focus, textarea:focus {
   flex-shrink: 0;
 }
 .habit-add-purpose { font-size: 0.82rem; margin-bottom: 10px; }
+.habit-mastered-badge {
+  display: inline-block;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #92660a;
+  background: #fff3cd;
+  padding: 4px 10px;
+  border-radius: 999px;
+  margin: 0 0 10px;
+}
 .habit-streak-row {
   display: flex;
   justify-content: space-between;
@@ -300,15 +339,34 @@ input:focus, select:focus, textarea:focus {
   color: var(--text-muted);
 }
 .habit-streak strong { color: var(--text); font-size: 1rem; }
-.habit-heatmap { display: flex; gap: 4px; margin-bottom: 12px; }
-.habit-day {
-  flex: 1;
+
+.habit-calendar {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 3px;
+  margin-bottom: 12px;
+}
+.habit-cal-weekday {
+  text-align: center;
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  padding-bottom: 2px;
+}
+.habit-cal-day {
   aspect-ratio: 1 / 1;
   border-radius: 4px;
   background: var(--surface-2);
+  font-size: 0.62rem;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
 }
-.habit-day.filled { background: var(--accent); }
-.habit-day.is-today { box-shadow: inset 0 0 0 2px var(--primary); }
+.habit-cal-day.empty { background: transparent; }
+.habit-cal-day.filled { background: var(--accent); color: #fff; font-weight: 700; }
+.habit-cal-day.is-today { box-shadow: inset 0 0 0 2px var(--primary); }
 .habit-check-btn {
   width: 100%;
   border: 1px solid var(--border);

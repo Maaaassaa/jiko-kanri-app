@@ -144,6 +144,13 @@
         <input type="text" id="habit-name" placeholder="例）読書30分" autocomplete="off" required />
         <label class="field-label" for="habit-purpose">なぜこの習慣を身につけたいですか？（任意）</label>
         <textarea id="habit-purpose" rows="2" placeholder="例）視野を広げて仕事に活かしたいから"></textarea>
+        <label class="field-label">時間帯</label>
+        <div class="segmented" id="habit-time-toggle">
+          <button type="button" class="seg-btn active" data-time="anytime">いつでも</button>
+          <button type="button" class="seg-btn" data-time="morning">☀️ 午前</button>
+          <button type="button" class="seg-btn" data-time="afternoon">🌇 午後</button>
+        </div>
+        <input type="hidden" id="habit-time" value="anytime" />
         <button type="submit" class="primary-btn">追加する</button>
       </form>
 
