@@ -739,25 +739,28 @@ input:focus, select:focus, textarea:focus {
   border-top: 1px solid var(--border);
   padding: 6px 6px calc(6px + var(--safe-bottom));
   z-index: 20;
+  overflow-x: auto;
+  scrollbar-width: none;
 }
+.tabbar::-webkit-scrollbar { display: none; }
 .tab {
-  flex: 1;
-  min-width: 0;
+  flex: 0 0 auto;
+  min-width: 60px;
   border: none;
   background: transparent;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 2px;
-  padding: 6px 0;
+  padding: 6px 4px;
   color: var(--text-muted);
-  font-size: 0.56rem;
+  font-size: 0.62rem;
   font-weight: 600;
   cursor: pointer;
   border-radius: 10px;
   white-space: nowrap;
 }
-.tab .icon { font-size: 1.1rem; }
+.tab .icon { font-size: 1.2rem; }
 .tab.active { color: var(--primary); }
 
 @media (min-width: 480px) {

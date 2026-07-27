@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
 <title>自己管理</title>
-<meta name="description" content="今日の成果・習慣・やることリスト・お金・買い物リスト・持ち物をまとめて管理する自己管理アプリ" />
+<meta name="description" content="メモ・今日の成果・習慣・やることリスト・お金・買い物リスト・持ち物をまとめて管理する自己管理アプリ" />
 <meta name="theme-color" content="#4f46e5" media="(prefers-color-scheme: light)" />
 <meta name="theme-color" content="#0f172a" media="(prefers-color-scheme: dark)" />
 <link rel="manifest" href="manifest.json" />
@@ -64,6 +64,20 @@
           <span class="stat-label">買いたいもの</span>
           <span class="stat-value" id="stat-buy-wish-left">0<small>件</small></span>
         </div>
+        <div class="stat-card">
+          <span class="stat-label">メモ</span>
+          <span class="stat-value" id="stat-memo-count">0<small>件</small></span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h2>最近のメモ</h2>
+          <button class="link-btn" data-goto="memo">すべて見る</button>
+        </div>
+        <ul class="mini-list" id="home-recent-memo">
+          <li class="empty-hint">まだメモがありません</li>
+        </ul>
       </div>
 
       <div class="card">
@@ -134,6 +148,20 @@
           <button type="button" class="primary-btn small secondary-btn" id="import-btn">📥 インポート</button>
         </div>
         <input type="file" id="import-file-input" accept="application/json" style="display:none" />
+      </div>
+    </section>
+
+    <!-- メモ -->
+    <section id="view-memo" class="view">
+      <form class="form-card sticky-note compose-note note-green" id="memo-form">
+        <label class="field-label" for="memo-text">思ったことをメモ</label>
+        <textarea id="memo-text" rows="3" placeholder="例）来月は運動する時間を増やしたい" required></textarea>
+        <button type="submit" class="primary-btn">メモを追加</button>
+      </form>
+
+      <div class="card">
+        <div class="card-header"><h2>メモ一覧</h2></div>
+        <div id="memo-list"></div>
       </div>
     </section>
 
@@ -352,6 +380,7 @@
 
   <nav class="tabbar">
     <button class="tab active" data-view="home"><span class="icon">🏠</span><span>ホーム</span></button>
+    <button class="tab" data-view="memo"><span class="icon">💭</span><span>メモ</span></button>
     <button class="tab" data-view="log"><span class="icon">📝</span><span>記録</span></button>
     <button class="tab" data-view="habit"><span class="icon">🌱</span><span>習慣</span></button>
     <button class="tab" data-view="todo"><span class="icon">✅</span><span>やること</span></button>

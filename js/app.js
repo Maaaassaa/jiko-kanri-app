@@ -32,6 +32,7 @@
       buyWishes: Array.isArray(parsed.buyWishes) ? parsed.buyWishes : [],
       belongings: Array.isArray(parsed.belongings) ? parsed.belongings : [],
       belongingCategories: Array.isArray(parsed.belongingCategories) ? parsed.belongingCategories : [],
+      memos: Array.isArray(parsed.memos) ? parsed.memos : [],
     };
   }
 
@@ -150,9 +151,10 @@
   }
 
   // ---------- View switching ----------
-  const VIEWS = ['home', 'log', 'habit', 'todo', 'money', 'shopping', 'belongings'];
+  const VIEWS = ['home', 'memo', 'log', 'habit', 'todo', 'money', 'shopping', 'belongings'];
   const PAGE_TITLES = {
     home: 'ホーム',
+    memo: 'メモ',
     log: '記録',
     habit: '習慣',
     todo: 'やることリスト',
@@ -171,6 +173,7 @@
     document.getElementById('page-title').textContent = PAGE_TITLES[name];
     document.getElementById('views').scrollTop = 0;
     if (name === 'home') renderHome();
+    if (name === 'memo') renderMemo();
     if (name === 'log') { renderCalendar(); renderLog(); }
     if (name === 'habit') renderHabit();
     if (name === 'todo') { renderTodo(); renderWish(); }
@@ -228,7 +231,22 @@
     const buyWishLeft = state.buyWishes.filter((w) => !w.checked).length;
     document.getElementById('stat-buy-wish-left').innerHTML = `${buyWishLeft}<small>件</small>`;
 
+    document.getElementById('stat-memo-count').innerHTML = `${state.memos.length}<small>件</small>`;
+
     document.getElementById('greeting-text').textContent = greetingByHour();
+
+    const recentMemos = [...state.memos].sort((a, b) => (b.date + b.time).localeCompare(a.date + a.time)).slice(0, 3);
+    const memoEl = document.getElementById('home-recent-memo');
+    memoEl.innerHTML = '';
+    if (recentMemos.length === 0) {
+      memoEl.innerHTML = '<li class="empty-hint">まだメモがありません</li>';
+    } else {
+      recentMemos.forEach((m) => {
+        const li = document.createElement('li');
+        li.innerHTML = `<span>${escapeHtml(truncate(m.text, 28))}</span><span class="muted">${formatDateLabel(m.date)}</span>`;
+        memoEl.appendChild(li);
+      });
+    }
 
     const recentRecords = [...state.records].sort((a, b) => (b.date + b.time).localeCompare(a.date + a.time)).slice(0, 3);
     const recEl = document.getElementById('home-recent-records');
@@ -317,6 +335,72 @@
         li.innerHTML = `<span>${escapeHtml(truncate(w.text, 28))}</span><span class="muted">${formatDateLabel(w.date)}</span>`;
         buyWishEl.appendChild(li);
       });
+    }
+  }
+
+  // ---------- Memo (メモ) ----------
+  const memoForm = document.getElementById('memo-form');
+  const memoTextInput = document.getElementById('memo-text');
+
+  memoForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const text = memoTextInput.value.trim();
+    if (!text) return;
+    state.memos.push({
+      id: uid(),
+      date: todayStr(),
+      time: nowTimeStr(),
+      text,
+      createdAt: Date.now(),
+    });
+    save();
+    memoTextInput.value = '';
+    renderMemo();
+  });
+
+  document.getElementById('memo-list').addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-del-memo]');
+    if (!btn) return;
+    if (!confirm('このメモを削除しますか？')) return;
+    const idx = state.memos.findIndex((m) => m.id === btn.dataset.delMemo);
+    if (idx !== -1) state.memos.splice(idx, 1);
+    save();
+    renderMemo();
+  });
+
+  function renderMemo() {
+    const listEl = document.getElementById('memo-list');
+    listEl.innerHTML = '';
+    if (state.memos.length === 0) {
+      listEl.innerHTML = '<p class="empty-hint">まだメモがありません。ふと思ったことを書き留めてみましょう。</p>';
+      return;
+    }
+    const sorted = [...state.memos].sort((a, b) => (b.date + b.time).localeCompare(a.date + a.time));
+    const groups = new Map();
+    sorted.forEach((m) => {
+      if (!groups.has(m.date)) groups.set(m.date, []);
+      groups.get(m.date).push(m);
+    });
+    for (const [date, items] of groups) {
+      const group = document.createElement('div');
+      group.className = 'log-day-group';
+      const heading = document.createElement('div');
+      heading.className = 'log-day-heading';
+      heading.textContent = formatDateLabel(date);
+      group.appendChild(heading);
+      items.forEach((m) => {
+        const { rot } = noteStyle(m.id);
+        const entry = document.createElement('div');
+        entry.className = 'sticky-note log-note note-green';
+        entry.style.setProperty('--rot', `${rot}deg`);
+        entry.innerHTML = `
+          <button class="note-del" data-del-memo="${m.id}">✕</button>
+          <p class="note-text">${escapeHtml(m.text)}</p>
+          <span class="note-time">${m.time}</span>
+        `;
+        group.appendChild(entry);
+      });
+      listEl.appendChild(group);
     }
   }
 
@@ -1498,6 +1582,7 @@
     moneyDateInput.value = todayStr();
     populateCategorySelect('expense');
     renderHome();
+    renderMemo();
     renderCalendar();
     renderLog();
     renderHabit();
